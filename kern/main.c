@@ -14,8 +14,11 @@ main()
     extern char edata[], end[];
 
     /* TODO: Use `memset` to clear the BSS section of our program. */
+    memset(edata, 1, end - edata);
 
     /* TODO: Use `cprintf` to print "hello, world\n" */
+    console_init();
+    cprintf("hello, world\n");
 
     while (1) ;
 }
