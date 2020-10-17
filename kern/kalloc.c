@@ -39,6 +39,9 @@ kfree(char *v)
     memset(v, 1, PGSIZE);
     
     /* TODO: Your code here. */
+    r = (struct run *)v;
+    r->next = kmem.free_list;
+    kmem.free_list = r;
 }
 
 void
@@ -65,7 +68,7 @@ kalloc()
     if (r)
         kmem.free_list = r->next;
     
-    if (r) // Fill with junk
+    if (r) /* Fill with junk */
         memset((char *)r, 5, PGSIZE);
     
     return (char *)r;
