@@ -60,6 +60,16 @@ char *
 kalloc()
 {
     /* TODO: Your code here. */
+    struct run *r;
+
+    r = kmem.free_list;
+    if (r)
+        kmem.free_list = r->next;
+    
+    if (r) // Fill with junk
+        memset((char *)r, 5, PGSIZE);
+    
+    return (char *)r;
 }
 
 void
