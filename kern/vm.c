@@ -25,6 +25,20 @@ static uint64_t *
 pgdir_walk(uint64_t *pgdir, const void *va, int64_t alloc)
 {
     /* TODO: Your code here. */
+    // if (va >= MAXVA)
+    //     panic("pgdir_walk");
+
+    for (int level = 0; level < 3; ++level) {
+        uint64_t *pte = &pgdir[PTX(level, va)];
+        if (*pte & PTE_P) {
+            pgdir = (uint64_t *)PTE_ADDR(*pte); /* Does not ensure pgdir[63:48] = 0 */
+        } else {
+            if (!alloc || (pgdir = (uint64_t *)kalloc()) == 0)
+                return 0;
+            memset(pgdir, 0, PGSIZE);
+            *pte = PTE_ADDR((uint64_t)pgdir) | PTE_P;
+        }
+    }
 }
 
 /*
