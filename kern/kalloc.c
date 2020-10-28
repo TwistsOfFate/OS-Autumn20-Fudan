@@ -32,7 +32,7 @@ kfree(char *v)
 {
     struct run *r;
 
-    if ((uint64_t)v % PGSIZE || v < end || (uint64_t)v >= P2V(PHYSTOP))
+    if ((uint64_t)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
         panic("kfree");
 
     /* Fill with junk to catch dangling refs. */
