@@ -31,21 +31,22 @@ pgdir_walk(uint64_t *pgdir, const void *va, int64_t alloc)
     for (int level = 0; level < 3; ++level) {
         uint64_t *pte = &pgdir[PTX(level, va)];
         if (*pte & PTE_P) {
-            pgdir = (uint64_t *)PTE_ADDR(*pte); /* Does not ensure pgdir[63:48] = 0 */
+            pgdir = (uint64_t *)P2V(PTE_ADDR(*pte)); /* Does not ensure pgdir[63:48] = 0 */
         } else {
             if (!alloc || (pgdir = (uint64_t *)kalloc()) == 0)
                 return 0;
             memset(pgdir, 0, PGSIZE);
-            *pte = PTE_ADDR((uint64_t)pgdir) | PTE_P;
+            *pte = V2P(PTE_ADDR((uint64_t)pgdir)) | PTE_P | PTE_TABLE;
         }
     }
+    return &pgdir[PTX(3, va)];
 }
 
 /*
  * Create PTEs for virtual addresses starting at va that refer to
  * physical addresses starting at pa. va and size might **NOT**
  * be page-aligned.
- * Use permission bits perm|PTE_P|PTE_TABLE|PTE_AF for the entries.
+ * Use permission bits perm|PTE_P|PTE_TABLE|PTE_AF|PTE_NORMAL for the entries.
  *
  * Hint: call pgdir_walk to get the corresponding page table entry
  */
@@ -54,6 +55,24 @@ static int
 map_region(uint64_t *pgdir, void *va, uint64_t size, uint64_t pa, int64_t perm)
 {
     /* TODO: Your code here. */
+    uint64_t a, last;
+    uint64_t *pte;
+
+    a = ROUNDDOWN((uint64_t)va, PGSIZE);
+    last = ROUNDDOWN((uint64_t)va + size - 1, PGSIZE);
+    for (;;) {
+        if ((pte = pgdir_walk(pgdir, va, 1)) == 0)
+            return -1;
+        if (*pte & PTE_P)
+            panic("remap");
+        *pte = PTE_ADDR(pa) | perm | PTE_P | PTE_TABLE | PTE_AF | PTE_NORMAL;
+        if (a == last)
+            break;
+        a += PGSIZE;
+        pa += PGSIZE;
+    }
+
+    return 0;
 }
 
 /* 
@@ -66,4 +85,16 @@ void
 vm_free(uint64_t *pgdir, int level)
 {
     /* TODO: Your code here. */
+    for (int i = 0; i < (PGSIZE >> 3); ++i) {
+        uint64_t pte = pgdir[i];
+        if ((pte & PTE_P) && (pte & PTE_TABLE)) {
+            /* This PTE points to a lower-level page table. */
+            uint64_t child = P2V(PTE_ADDR(pte));
+            vm_free((uint64_t *)child, level + 1);
+            pgdir[i] = 0;
+        } else if (pte & PTE_P) {
+            panic("vmfree: leaf");
+        }
+    }
+    kfree((char *)pgdir);
 }
