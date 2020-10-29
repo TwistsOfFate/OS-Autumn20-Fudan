@@ -7,6 +7,7 @@
 #include "trap.h"
 #include "timer.h"
 #include "spinlock.h"
+#include "vm.h"
 
 void
 main()
@@ -30,6 +31,7 @@ main()
     console_init();
     alloc_init();
     cprintf("Allocator: Init success.\n");
+    test_mem();
     check_free_list();
 
     irq_init();
