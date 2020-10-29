@@ -25,8 +25,10 @@ static uint64_t *
 pgdir_walk(uint64_t *pgdir, const void *va, int64_t alloc)
 {
     /* TODO: Your code here. */
-    // if (va >= MAXVA)
+    // if ((uint64_t)va >= ((uint64_t)1 << 47)) {
+    //     /* Only lower virtual addresses allowed */
     //     panic("pgdir_walk");
+    // }
 
     for (int level = 0; level < 3; ++level) {
         uint64_t *pte = &pgdir[PTX(level, va)];
@@ -34,9 +36,9 @@ pgdir_walk(uint64_t *pgdir, const void *va, int64_t alloc)
             pgdir = (uint64_t *)P2V(PTE_ADDR(*pte)); /* Does not ensure pgdir[63:48] = 0 */
         } else {
             if (!alloc || (pgdir = (uint64_t *)kalloc()) == 0)
-                return 0;
+                return NULL;
             memset(pgdir, 0, PGSIZE);
-            *pte = V2P(PTE_ADDR((uint64_t)pgdir)) | PTE_P | PTE_TABLE;
+            *pte = V2P(PTE_ADDR(pgdir)) | PTE_P | PTE_TABLE;
         }
     }
     return &pgdir[PTX(3, va)];
@@ -60,8 +62,9 @@ map_region(uint64_t *pgdir, void *va, uint64_t size, uint64_t pa, int64_t perm)
 
     a = ROUNDDOWN((uint64_t)va, PGSIZE);
     last = ROUNDDOWN((uint64_t)va + size - 1, PGSIZE);
+
     for (;;) {
-        if ((pte = pgdir_walk(pgdir, va, 1)) == 0)
+        if ((pte = pgdir_walk(pgdir, (void *)a, 1)) == NULL)
             return -1;
         if (*pte & PTE_P)
             panic("remap");
@@ -89,7 +92,7 @@ vm_free(uint64_t *pgdir, int level)
         uint64_t pte = pgdir[i];
         if ((pte & PTE_P) && (pte & PTE_TABLE)) {
             /* This PTE points to a lower-level page table. */
-            uint64_t child = P2V(PTE_ADDR(pte));
+            uint64_t child = (uint64_t)P2V(PTE_ADDR(pte));
             vm_free((uint64_t *)child, level + 1);
             pgdir[i] = 0;
         } else if (pte & PTE_P) {
@@ -97,4 +100,23 @@ vm_free(uint64_t *pgdir, int level)
         }
     }
     kfree((char *)pgdir);
+}
+
+/*
+ * Test code by Master Han
+ */
+
+void
+test_mem()
+{
+    cprintf("\ntest_mem() begin:\n");
+
+    *((uint64_t *)P2V(4)) = 0xfd2020;
+    char *pgdir = kalloc();
+    memset(pgdir, 0, PGSIZE);
+    map_region((uint64_t *)pgdir, (void *)0x1004, PGSIZE, 4, 0);
+    asm volatile("msr ttbr0_el1, %[x]": : [x]"r"(V2P(pgdir)));
+
+    cprintf("Memory content at 0x1004: 0x%x\n", *(uint64_t *)0x1004);
+    cprintf("test_mem() end.\n\n");
 }

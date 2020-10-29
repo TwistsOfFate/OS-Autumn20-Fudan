@@ -3,6 +3,7 @@
 #include "string.h"
 #include "console.h"
 #include "kalloc.h"
+#include "vm.h"
 
 void
 main()
@@ -20,6 +21,8 @@ main()
     console_init();
     alloc_init();
     cprintf("Allocator: Init success.\n");
+    test_mem();
     check_free_list();
+    
     while (1) ;
 }
