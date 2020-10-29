@@ -42,6 +42,8 @@ main()
 
     lvbar(vectors);
     timer_init();
+    cprintf("timer_init() success\n");
+    sti();
 
     cprintf("main: [CPU%d] Init success.\n", cpuid());
     scheduler();
