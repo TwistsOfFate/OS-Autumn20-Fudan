@@ -7,6 +7,7 @@
 void vm_free(uint64_t *, int);
 void uvm_switch(struct proc *);
 void uvm_init(uint64_t *, char *, int);
+void test_mem();
 
 uint64_t *pgdir_init();
 
