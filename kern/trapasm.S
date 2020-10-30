@@ -12,10 +12,11 @@ alltraps:
      */
 
     /* TODO: Your code here. */
-    str     x30, [sp, #-16]
+    /* A total of 34 registers saved: x0~x30, SPSR_EL1, ELR_EL1, SP_EL0 */
+    sub     sp, sp, #16
+    str     x30, [sp]
     mov     x30, sp
-    str     x30, [sp, #-8]
-    sub     sp, sp, #-8
+    str     x30, [sp, #8]
 
     stp     x28, x29, [sp, #-16]!
     stp     x26, x27, [sp, #-16]!
@@ -44,7 +45,7 @@ alltraps:
 
     /* TODO: Your code here. */
     mov     x0, sp
-    b       trap
+    bl      trap
 
 /* Return falls through to trapret. */
 .global trapret

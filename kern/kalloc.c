@@ -37,7 +37,7 @@ kfree(char *v)
         panic("kfree\n");
 
     /* Fill with junk to catch dangling refs. */
-    memset(v, 1, PGSIZE);
+    // memset(v, 1, PGSIZE);
     
     /* TODO: Your code here. */
     r = (struct run *)v;
