@@ -95,8 +95,6 @@ vm_free(uint64_t *pgdir, int level)
             uint64_t child = (uint64_t)P2V(PTE_ADDR(pte));
             vm_free((uint64_t *)child, level + 1);
             pgdir[i] = 0;
-        } else if (pte & PTE_P) {
-            panic("vmfree: leaf");
         }
     }
     kfree((char *)pgdir);
