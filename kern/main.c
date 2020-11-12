@@ -11,6 +11,8 @@
 
 struct cpu cpus[NCPU];
 
+volatile static int started = 0;
+
 void
 main()
 {
@@ -26,17 +28,24 @@ main()
      * called once, and use lock to guarantee this.
      */
     /* TODO: Your code here. */
-
     cprintf("main: [CPU%d] is init kernel\n", cpuid());
+    
+    if (cpuid() == 0) {
+        /* TODO: Use `memset` to clear the BSS section of our program. */
+        memset(edata, 0, end - edata);    
+        console_init();
+        alloc_init();
+        cprintf("main: allocator init success.\n");
+        check_free_list();
 
-    /* TODO: Use `memset` to clear the BSS section of our program. */
-    memset(edata, 0, end - edata);
-    console_init();
-    alloc_init();
-    cprintf("main: allocator init success.\n");
-    check_free_list();
+        irq_init();
 
-    irq_init();
+        started = 1;
+    }
+
+    while (started == 0)
+        ;
+    
     proc_init();
     user_init();
 
