@@ -31,15 +31,12 @@ main()
     console_init();
     alloc_init();
     cprintf("Allocator: Init success.\n");
-    test_mem();
     check_free_list();
 
     irq_init();
 
     lvbar(vectors);
     timer_init();
-
-    sti();
 
     cprintf("CPU %d: Init success.\n", cpuid());
 
