@@ -9,6 +9,8 @@
 #include "spinlock.h"
 #include "vm.h"
 
+volatile static int started = 0;
+
 void
 main()
 {
@@ -24,17 +26,23 @@ main()
      * called once, and use lock to guarantee this.
      */
     /* TODO: Your code here. */
+    if (cpuid() == 0) {
+        /* TODO: Use `memset` to clear the BSS section of our program. */
+        memset(edata, 0, end - edata);    
+        /* TODO: Use `cprintf` to print "hello, world\n" */
+        console_init();
+        alloc_init();
+        cprintf("Allocator: Init success.\n");
+        check_free_list();
 
-    /* TODO: Use `memset` to clear the BSS section of our program. */
-    memset(edata, 0, end - edata);    
-    /* TODO: Use `cprintf` to print "hello, world\n" */
-    console_init();
-    alloc_init();
-    cprintf("Allocator: Init success.\n");
-    check_free_list();
+        irq_init();
 
-    irq_init();
+        started = 1;
+    }
 
+    while (started == 0)
+        ;
+    
     lvbar(vectors);
     timer_init();
 
