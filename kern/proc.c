@@ -9,6 +9,7 @@
 
 struct {
     struct proc proc[NPROC];
+    struct spinlock lock;
 } ptable;
 
 static struct proc *initproc;
@@ -25,6 +26,7 @@ void
 proc_init()
 {
     /* TODO: Your code here. */
+    initlock(&ptable.lock, "ptable");
 }
 
 /*
@@ -38,6 +40,54 @@ proc_alloc()
 {
     struct proc *p;
     /* TODO: Your code here. */
+    char *sp;
+    int found = 0;
+    acquire(&ptable.lock);
+
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+        if (p->state == UNUSED) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found) {
+        release(&ptable.lock);
+        return 0;
+    }
+    else {
+        /* Alloc kernel stack. */
+        if ((p->kstack = kalloc()) == 0) {
+            release(&ptable.lock);
+            panic("proc_alloc: cannot alloc kstack.\n");
+        }
+        p->sz = PGSIZE;
+
+        sp = p->kstack + KSTACKSIZE;
+        
+        /* Alloc trapframe. */
+        sp -= sizeof(struct trapframe);
+        p->tf = (struct trapframe *)sp;
+
+        /* Fill trapret. */
+        sp -= 8;
+        *(uint64_t *)sp = (uint64_t)trapret;
+
+        /* Fill sp. */
+        sp -= 8;
+        *(uint64_t *)sp = (uint64_t)p->kstack + KSTACKSIZE;
+
+        /* Alloc context. */
+        sp -= sizeof(struct context);
+        p->context = (struct context *)sp;
+        
+        p->context->x30 = (uint64_t)forkret + 8;
+
+        p->state = EMBRYO;
+        p->pid = nextpid++;
+
+        release(&ptable.lock);
+    }
 
     return p;
 }
@@ -56,6 +106,21 @@ user_init()
     extern char _binary_obj_user_initcode_start[], _binary_obj_user_initcode_size[];
     
     /* TODO: Your code here. */
+    p = proc_alloc();
+
+    if ((p->pgdir = pgdir_init()) == 0)
+        panic("user_init: kalloc failed\n");
+
+    initproc = p;
+    uvm_init(p->pgdir, (char *)_binary_obj_user_initcode_start, (int)_binary_obj_user_initcode_size);
+    
+    /* Fill trapframe */
+    p->tf->spsr = 0;
+    p->tf->sp = PGSIZE;
+    // p->tf->r30 = 0;
+    p->tf->elr = 0;
+
+    p->state = RUNNABLE;
 }
 
 /*
@@ -77,6 +142,21 @@ scheduler()
     for (;;) {
         /* Loop over process table looking for process to run. */
         /* TODO: Your code here. */
+
+        acquire(&ptable.lock);
+
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+            if (p->state == RUNNABLE) {
+                c->proc = p;
+                uvm_switch(p);
+                p->state = RUNNING;
+                sti();
+                swtch(&c->scheduler, p->context);
+                c->proc = NULL;
+            }
+        }
+
+        release(&ptable.lock);
     }
 }
 
@@ -87,6 +167,15 @@ void
 sched()
 {
     /* TODO: Your code here. */
+    struct proc *p = thiscpu->proc;
+
+    if (!holding(&ptable.lock))
+        panic("sched: not holding ptable lock\n");
+
+    if (p->state == RUNNING)
+        panic("sched: process running\n");
+
+    swtch(&p->context, thiscpu->scheduler);
 }
 
 /*
@@ -96,6 +185,7 @@ void
 forkret()
 {
     /* TODO: Your code here. */
+    release(&ptable.lock);
 }
 
 /*
@@ -108,4 +198,26 @@ exit()
 {
     struct proc *p = thiscpu->proc;
     /* TODO: Your code here. */
+    // if (p == initproc)
+    //     panic("exit: init exiting\n");
+    
+    acquire(&ptable.lock);
+
+    p->state = ZOMBIE;
+    sched();
+
+    panic("exit: zombie exit\n");
+}
+
+/*
+ * Give up the CPU for one scheduling round.
+ */
+void
+yield()
+{
+    struct proc *p = thiscpu->proc;
+    acquire(&ptable.lock);
+    p->state = RUNNABLE;
+    sched();
+    release(&ptable.lock);
 }

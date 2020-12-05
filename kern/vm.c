@@ -108,6 +108,13 @@ uint64_t *
 pgdir_init()
 {
     /* TODO: Your code here. */
+    uint64_t *pgt;
+
+    if ((pgt = (uint64_t *)kalloc()) == 0)
+        panic("pgdir_init: kalloc failed\n");
+    
+    memset(pgt, 0, PGSIZE);
+    return pgt;
 }
 
 /* 
@@ -120,6 +127,15 @@ void
 uvm_init(uint64_t *pgdir, char *binary, int sz)
 {
     /* TODO: Your code here. */
+    char *mem;
+
+    if (sz > PGSIZE)
+        panic("uvm_init: page overflow!\n");
+    
+    mem = kalloc();
+    memset(mem, 0, PGSIZE);
+    map_region(pgdir, (void *)0, (uint64_t)PGSIZE, V2P(mem), PTE_USER|PTE_RW|PTE_PAGE);
+    memmove(mem, (void *)binary, sz);
 }
 
 /*
@@ -129,6 +145,10 @@ void
 uvm_switch(struct proc *p)
 {
     /* TODO: Your code here. */
+    if (p->pgdir == 0)
+        panic("uvm_switch: no pgdir\n");
+
+    lttbr0((uint64_t)V2P(p->pgdir));
 }
 
 /*
