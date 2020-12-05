@@ -136,6 +136,11 @@ syscall()
      * }
      */
     /* TODO: Your code here. */
+    switch (proc->tf->r0) {
+        case SYS_exec: return sys_exec();
+        case SYS_exit: return sys_exit();
+        default: panic("syscall: unknown syscall\n");
+    }
 
     return 0;
 }
