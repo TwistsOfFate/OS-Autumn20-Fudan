@@ -14,7 +14,9 @@ start:
 exit:
     mov     x0, #SYS_exit
     svc     0x00
-    b       exit
+
+loop:
+    b       loop
 
 # char init[] = "/init\0";
 init:

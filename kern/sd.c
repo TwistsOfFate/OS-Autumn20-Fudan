@@ -21,6 +21,8 @@
 #include "console.h"
 
 #include "proc.h"
+#include "spinlock.h"
+#include "defines.h"
 
 // Private functions.
 static void sd_start(struct buf *b);
@@ -490,6 +492,9 @@ static int sdBaseClock;
 
 #define MBX_PROP_CLOCK_EMMC 1
 
+struct spinlock sdlock;
+struct list_head sdque;
+
 /*
  * Initialize SD card and parse MBR.
  * 1. The first partition should be FAT and is used for booting.
@@ -505,6 +510,8 @@ sd_init()
      * Remember to call sd_init() at somewhere.
      */
     /* TODO: Your code here. */
+    INIT_LIST_HEAD(&sdque);
+    initlock(&sdlock, "sdcard");
 
     sdInit();
     assert(sdCard.init);
@@ -518,6 +525,24 @@ sd_init()
      */
 
     /* TODO: Your code here. */
+    struct buf b;
+    memset(b.data, 0, sizeof(b.data));
+    b.blockno = 0;
+    b.flags = 0;
+
+    sd_start(&b);
+    sdWaitForInterrupt(INT_READ_RDY);
+    uint32_t* intbuf = (uint32_t*)b.data;
+    for (int done = 0; done < 128; )
+        intbuf[done++] = *EMMC_DATA;
+    sdWaitForInterrupt(INT_DATA_DONE);
+    disb();
+
+    uint32_t partition2[4];
+    memcpy(partition2, &b.data[0x1CE], sizeof(partition2));
+    cprintf("- sd init: Partition type ID: 0x%x\n", partition2[1] & 0xff);
+    cprintf("- sd init: LBA of first absolute sector: 0x%x\n", partition2[2]);
+    cprintf("- sd init: Number of sectors in partition: 0x%x\n", partition2[3]);
 }
 
 static void
@@ -537,7 +562,7 @@ sd_start(struct buf *b)
     int bno = sdCard.type == SD_TYPE_2_HC ? b->blockno : b->blockno << 9;
     int write = b->flags & B_DIRTY;
 
-    cprintf("- sd start: cpu %d, flag 0x%x, bno %d, write=%d\n", cpuid(), b->flags, bno, write);
+    // cprintf("- sd start: cpu %d, flag 0x%x, bno %d, write=%d\n", cpuid(), b->flags, bno, write);
 
     disb();
     // Ensure that any data operation has completed before doing the transfer.
@@ -573,11 +598,16 @@ void
 sd_intr()
 {
     /* TODO: Your code here. */
-
-    /* Hint: Example pseudocode is provided as below. */
-
-    /*
-    acquire(&sdlock);
+#ifdef PRINT_TRACE
+    cprintf("sd_intr: cpu%d, pid %d\n", cpuid(), thiscpu->proc->pid);
+    cprintf("sd_intr: acquring sdlock...");
+#endif
+    if (!holding(&sdlock)) {
+        acquire(&sdlock);
+    }
+#ifdef PRINT_TRACE
+    cprintf("Success!\n");
+#endif
     if (list_empty(&sdque)) {
         cprintf("sd receive redundent interrupt 0x%x, omitted.\n", *EMMC_INTERRUPT);
     } else {
@@ -589,7 +619,7 @@ sd_intr()
         *EMMC_INTERRUPT = i; // Clear interrupt.
         disb();
 
-        struct buf *b = list_front(&sdque);
+        struct buf *b = list_first_entry(&sdque, struct buf, node_buf);
         int write = b->flags & B_DIRTY;
         if (!((write && i == INT_DATA_DONE) || (!write && INT_READ_RDY))) {
             sd_start(b);
@@ -606,14 +636,19 @@ sd_intr()
             b->flags |= B_VALID;
             b->flags &= ~B_DIRTY;
             wakeup(b);
-
-            list_pop_front(&sdque);
-            if (!list_empty(&sdque))
-                sd_start(list_front(&sdque));
+#ifdef PRINT_TRACE
+            cprintf("sd_intr: cpu%d, chan %d waken up\n", cpuid(), b);
+#endif
+            list_del(sdque.next);
+            if (!list_empty(&sdque)) {
+                sd_start(list_first_entry(&sdque, struct buf, node_buf));
+            }
         }
     }
     release(&sdlock);
-    */
+#ifdef PRINT_TRACE
+    cprintf("sd_intr: released sdlock\n");
+#endif
 }
 
 /*
@@ -625,6 +660,15 @@ void
 sdrw(struct buf *b)
 {
     /* TODO: Your code here. */
+    acquire(&sdlock);
+    if (list_empty(&sdque)) {
+        list_add_tail(&b->node_buf, &sdque);
+        sd_start(b);
+    } else {
+        list_add_tail(&b->node_buf, &sdque);
+    }
+    sleep(b, &sdlock);
+    release(&sdlock);
 
 }
 
@@ -712,6 +756,7 @@ sdDebugResponse(int resp)
 static int
 sdWaitForInterrupt(unsigned int mask)
 {
+    // cprintf("sdWaitForInterrupt: cpu %d\n", cpuid());
     // Wait up to 1 second for the interrupt.
     int count = 1000000;
     int waitMask = mask | INT_ERROR_MASK;
@@ -743,7 +788,7 @@ sdWaitForInterrupt(unsigned int mask)
 
     // Clear the interrupt we were waiting for, leaving any other (non-error) interrupts.
     *EMMC_INTERRUPT = mask;
-
+    // cprintf("sdWaitForInterrupt: done\n");
     return SD_OK;
 }
 

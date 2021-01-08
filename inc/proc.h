@@ -5,6 +5,7 @@
 
 #include "arm.h"
 #include "trap.h"
+#include "spinlock.h"
 
 #define NCPU   4        /* maximum number of CPUs */
 #define NPROC 64        /* maximum number of processes */
@@ -61,6 +62,8 @@ struct proc {
 
     struct file *ofile[NOFILE];  /* Open files */
     struct inode *cwd;           /* Current directory */
+    int priority;            /* Scheduling priority                     */
+    int cpus_allowed;        /* Mask allowed CPUs                       */
 };
 
 static inline struct proc *
@@ -77,5 +80,12 @@ void yield();
 void exit();
 int fork();
 int wait();
+
+void sleep(void *, struct spinlock *);
+void wakeup(void *);
+
+void drop_priority();
+void raise_priority();
+void set_cpus_allowed(int);
 
 #endif

@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "sleeplock.h"
 #include "fs.h"
+#include "list.h"
+
+#define BSIZE   512
 
 #define B_VALID 0x2     /* Buffer has been read from disk. */
 #define B_DIRTY 0x4     /* Buffer needs to be written to disk. */
@@ -17,7 +20,7 @@ struct buf {
     struct sleeplock lock;
 
     /* TODO: Your code here. */
-
+    struct list_head node_buf;
 };
 
 void        binit();

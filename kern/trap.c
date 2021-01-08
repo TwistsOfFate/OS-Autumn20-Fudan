@@ -26,6 +26,8 @@ irq_init()
 void
 interrupt(struct trapframe *tf)
 {
+    int src2;
+    struct proc *proc = thiscpu->proc;
     int src = get32(IRQ_SRC_CORE(cpuid()));
     if (src & IRQ_CNTPNSIRQ) {
         timer_reset();

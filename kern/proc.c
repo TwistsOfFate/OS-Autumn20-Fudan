@@ -7,6 +7,8 @@
 #include "vm.h"
 #include "mmu.h"
 
+#include "defines.h"
+
 struct {
     struct proc proc[NPROC];
     struct spinlock lock;
@@ -85,6 +87,8 @@ proc_alloc()
 
         p->state = EMBRYO;
         p->pid = nextpid++;
+        p->priority = 0;
+        p->cpus_allowed = ~0;
 
         release(&ptable.lock);
     }
@@ -117,7 +121,6 @@ user_init()
     /* Fill trapframe */
     p->tf->spsr = 0;
     p->tf->sp = PGSIZE;
-    // p->tf->r30 = 0;
     p->tf->elr = 0;
 
     p->state = RUNNABLE;
@@ -138,21 +141,31 @@ scheduler()
     struct proc *p;
     struct cpu *c = thiscpu;
     c->proc = NULL;
+
+    int ran;
     
     for (;;) {
         /* Loop over process table looking for process to run. */
         /* TODO: Your code here. */
 
+        ran = 0;
         acquire(&ptable.lock);
 
-        for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
-            if (p->state == RUNNABLE) {
-                c->proc = p;
-                uvm_switch(p);
-                p->state = RUNNING;
-                sti();
-                swtch(&c->scheduler, p->context);
-                c->proc = NULL;
+        for (int pri = 1; pri >= 0 && !ran; --pri) {
+            for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+                if (p->state == RUNNABLE && p->priority == pri && ((p->cpus_allowed >> cpuid()) & 1)) {
+#ifdef PRINT_TRACE
+                    cprintf("scheduler: cpu%d running pid %d\n", cpuid(), p->pid);
+#endif
+                    c->proc = p;
+                    uvm_switch(p);
+                    p->state = RUNNING;
+                    swtch(&c->scheduler, p->context);
+                    c->proc = NULL;
+
+                    ran = 1;
+                    break;
+                }
             }
         }
 
@@ -217,10 +230,17 @@ yield()
 {
     struct proc *p = thiscpu->proc;
     acquire(&ptable.lock);
+#ifdef PRINT_TRACE
+    cprintf("yield: cpu %d, pid %d acquired ptable lock\n", cpuid(), p->pid);
+#endif
     p->state = RUNNABLE;
     sched();
     release(&ptable.lock);
+#ifdef PRINT_TRACE
+    cprintf("yield: cpu %d, pid %d released ptable lock\n", cpuid(), p->pid);
+#endif
 }
+
 /*
  * Atomically release lock and sleep on chan.
  * Reacquires lock when awakened.
@@ -229,6 +249,39 @@ void
 sleep(void *chan, struct spinlock *lk)
 {
     /* TODO: Your code here. */
+    struct proc *p = thiscpu->proc;
+
+    if (lk == NULL || !holding(lk)) {
+        panic("sleep: no lock held\n");
+    }
+#ifdef PRINT_TRACE
+    cprintf("sleep: cpu%d, pid %d\n", cpuid(), p->pid);
+    cprintf("sleep: acquiring ptable lock and releasing sdlock...");
+#endif
+    if (lk != &ptable.lock) {
+        acquire(&ptable.lock);
+        release(lk);
+    }
+#ifdef PRINT_TRACE
+    cprintf("Success!\n");
+#endif
+    p->chan = chan;
+    p->state = SLEEPING;
+    sched();
+#ifdef PRINT_TRACE
+    cprintf("sleep: cpu%d, pid %d returned from sleep\n", cpuid(), p->pid);
+#endif
+    p->chan = 0;
+#ifdef PRINT_TRACE
+    cprintf("sleep: releasing ptable lock and acquiring sdlock...");
+#endif
+    if (lk != &ptable.lock) {
+        release(&ptable.lock);
+        acquire(lk);
+    }
+#ifdef PRINT_TRACE
+    cprintf("Success!\n");
+#endif
 }
 
 /* Wake up all processes sleeping on chan. */
@@ -236,6 +289,70 @@ void
 wakeup(void *chan)
 {
     /* TODO: Your code here. */
+    struct proc *p;
+#ifdef PRINT_TRACE
+    cprintf("wakeup: cpu%d, pid %d, chan %d\n", cpuid(), thiscpu->proc->pid, chan);
+    cprintf("wakeup: acquiring ptable lock...");
+#endif
+    acquire(&ptable.lock);
+#ifdef PRINT_TRACE
+    cprintf("Success!\n");
+#endif
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+        if (p->state == SLEEPING && p->chan == chan) {
+#ifdef PRINT_TRACE
+            cprintf("wakeup: pid %d runnable\n", p->pid);
+#endif
+            p->state = RUNNABLE;
+        }
+    }
+
+    release(&ptable.lock);
+#ifdef PRINT_TRACE
+    cprintf("wakeup: released ptable lock\n");
+#endif
+}
+
+/* 
+ * Reduce priority of current process if possible
+ * Typically called by timer()
+ */
+void
+drop_priority()
+{
+    struct proc *p = thiscpu->proc;
+    acquire(&ptable.lock);
+    if (p->priority > 0) {
+        p->priority--;
+    }
+    release(&ptable.lock);
+}
+
+/* 
+ * Raise priority of current process if possible
+ */
+void
+raise_priority()
+{
+    struct proc *p = thiscpu->proc;
+    acquire(&ptable.lock);
+    if (p->priority < 1) {
+        p->priority++;
+    }
+    release(&ptable.lock);
+}
+
+/* 
+ * Set cpus_allowed mask
+ */
+void
+set_cpus_allowed(int mask)
+{
+    struct proc *p = thiscpu->proc;
+    acquire(&ptable.lock);
+    p->cpus_allowed = mask;
+    release(&ptable.lock);
 }
 
 /* Give up CPU. */
