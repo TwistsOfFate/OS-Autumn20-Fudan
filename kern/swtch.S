@@ -19,7 +19,7 @@ swtch:
 
     mov     x24, sp
     str     x24, [x0]
-    mov     sp, x1
+    mov     sp,  x1
 
     ldp     x19, x20, [sp], #16
     ldp     x21, x22, [sp], #16

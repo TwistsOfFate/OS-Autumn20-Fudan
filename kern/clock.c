@@ -27,5 +27,7 @@ clock_reset()
 void
 clock()
 {
+#ifdef PRINT_TRACE
     cprintf("clock: cpu %d clock.\n", cpuid());
+#endif
 }

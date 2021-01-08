@@ -26,6 +26,7 @@ irq_init()
 void
 trap(struct trapframe *tf)
 {
+    int src2;
     struct proc *proc = thiscpu->proc;
     int src = get32(IRQ_SRC_CORE(cpuid()));
     if (src & IRQ_CNTPNSIRQ) timer(), timer_reset();
@@ -35,7 +36,12 @@ trap(struct trapframe *tf)
         else if (get32(IRQ_PENDING_2) & VC_ARASANSDIO_INT) sd_intr();
         else goto bad;
     } else {
-        switch (resr() >> EC_SHIFT) {
+        src2 = resr();
+        switch (src2 >> EC_SHIFT) {
+        // case 0:
+        //     lesr(0);
+        //     cprintf("trap: cpu%d, pid %d, src 0x%x, 0x%x\n", cpuid(), thiscpu->proc->pid, src, src2);
+        //     break;
         case EC_SVC64:
             lesr(0);  /* Clear esr. */
             /* Jump to syscall to handle the system call from user process */
@@ -45,6 +51,7 @@ trap(struct trapframe *tf)
             break;
         default:
 bad:
+            cprintf("trap: cpu%d, pid %d, src 0x%x, 0x%x\n", cpuid(), thiscpu->proc->pid, src, src2);
             panic("trap: unexpected irq.\n");
         }
     }

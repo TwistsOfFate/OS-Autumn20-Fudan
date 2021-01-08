@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "arm.h"
 #include "trap.h"
+#include "spinlock.h"
 
 #define NCPU   4        /* maximum number of CPUs */
 #define NPROC 64        /* maximum number of processes */
@@ -56,6 +57,9 @@ struct proc {
     void *chan;              /* If non-zero, sleeping on chan           */
     int killed;              /* If non-zero, have been killed           */
     char name[16];           /* Process name (debugging)                */
+
+    int priority;            /* Scheduling priority                     */
+    int cpus_allowed;        /* Mask allowed CPUs                       */
 };
 
 void proc_init();
@@ -63,5 +67,12 @@ void user_init();
 void scheduler();
 
 void exit();
+
+void sleep(void *, struct spinlock *);
+void wakeup(void *);
+
+void drop_priority();
+void raise_priority();
+void set_cpus_allowed(int);
 
 #endif

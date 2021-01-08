@@ -3,6 +3,8 @@
 #include "console.h"
 #include "string.h"
 
+#include "syscallno.h"
+
 int
 sys_exec()
 {

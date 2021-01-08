@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sd.h"
 
 struct cpu cpus[NCPU];
 
@@ -40,7 +41,12 @@ main()
 
         irq_init();
         proc_init();
-        user_init();
+
+        for (int i = 0; i < 4; ++i) {
+            user_init();
+        }
+        
+        sd_init();
 
         started = 1;
     }
@@ -52,6 +58,7 @@ main()
     timer_init();
 
     cprintf("main: [CPU%d] Init success.\n", cpuid());
+
     scheduler();
-    while (1) ;
+
 }

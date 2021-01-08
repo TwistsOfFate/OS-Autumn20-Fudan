@@ -2,6 +2,7 @@
 #define INC_BUF_H
 
 #include <stdint.h>
+#include "list.h"
 
 #define BSIZE   512
 
@@ -14,7 +15,7 @@ struct buf {
     uint8_t data[BSIZE];
 
     /* TODO: Your code here. */
-
+    struct list_head node_buf;
 };
 
 #endif

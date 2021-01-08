@@ -4,6 +4,7 @@
 #include "peripherals/irq.h"
 
 #include "console.h"
+#include "proc.h"
 
 static int dt = 19200000;
 
@@ -28,5 +29,11 @@ timer_reset()
 void
 timer()
 {
+#ifdef PRINT_TRACE
     cprintf("timer: cpu %d timer.\n", cpuid());
+#endif
+    drop_priority();
+    // cprintf("timer: pid %d dropped\n", thiscpu->proc->pid);
+    yield();
+    
 }

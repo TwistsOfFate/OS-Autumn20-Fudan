@@ -2,6 +2,9 @@
 #include "proc.h"
 #include "syscall.h"
 #include "console.h"
+#include "syscallno.h"
+
+#include "defines.h"
 
 /* 
  * User code makes a system call with SVC, system call number in r0.
@@ -136,9 +139,35 @@ syscall()
      * }
      */
     /* TODO: Your code here. */
+    static int sd_test_pid = 0;
+    static int sd_test_done = 0;
+    static int idle_pid = 0;
+
+    int pid = proc->pid;
+
     switch (proc->tf->r0) {
-        case SYS_exec: return sys_exec();
-        case SYS_exit: return sys_exit();
+        case SYS_exec:
+            if (cpuid() == 1 && sd_test_pid == 0) {
+                sd_test_pid = thiscpu->proc->pid;
+                raise_priority();
+                set_cpus_allowed(~0 ^ 1);               // Don't run on CPU0
+#ifdef PRINT_TRACE
+                cprintf("sd_test pid %d\n", sd_test_pid);
+#endif
+                sd_test(); 
+            } else if (cpuid() == 0) {
+                set_cpus_allowed(1);
+            }
+            return sys_exec();
+        case SYS_exit:
+#ifdef PRINT_TRACE
+            cprintf("cpu%d, pid %d: SYS_exit\n", cpuid(), pid);
+#endif
+            if (thiscpu->proc->pid == sd_test_pid || sd_test_done) {
+                sd_test_done = 1;
+                return sys_exit();
+            }
+            else return 0;
         default: panic("syscall: unknown syscall\n");
     }
 

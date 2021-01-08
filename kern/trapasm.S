@@ -13,30 +13,29 @@ alltraps:
 
     /* TODO: Your code here. */
     /* A total of 34 registers saved: x0~x30, SPSR_EL1, ELR_EL1, SP_EL0 */
-    sub     sp, sp, #16
-    str     x30, [sp]
-    mov     x30, sp
-    str     x30, [sp, #8]
 
-    stp     x28, x29, [sp, #-16]!
-    stp     x26, x27, [sp, #-16]!
-    stp     x24, x25, [sp, #-16]!
-    stp     x22, x23, [sp, #-16]!
-    stp     x20, x21, [sp, #-16]!
-    stp     x18, x19, [sp, #-16]!
-    stp     x16, x17, [sp, #-16]!
-    stp     x14, x15, [sp, #-16]!
-    stp     x12, x13, [sp, #-16]!
-    stp     x10, x11, [sp, #-16]!
-    stp     x8, x9, [sp, #-16]!
-    stp     x6, x7, [sp, #-16]!
-    stp     x4, x5, [sp, #-16]!
-    stp     x2, x3, [sp, #-16]!
-    stp     x0, x1, [sp, #-16]!
+    stp x29, x30, [sp, #-16]!
+    stp x27, x28, [sp, #-16]!
+    stp x25, x26, [sp, #-16]!
+    stp x23, x24, [sp, #-16]!
+    stp x21, x22, [sp, #-16]!
+    stp x19, x20, [sp, #-16]!
+    stp x17, x18, [sp, #-16]!
+    stp x15, x16, [sp, #-16]!
+    stp x13, x14, [sp, #-16]!
+    stp x11, x12, [sp, #-16]!
+    stp x9,  x10, [sp, #-16]!
+    stp x7,  x8,  [sp, #-16]!
+    stp x5,  x6,  [sp, #-16]!
+    stp x3,  x4,  [sp, #-16]!
+    stp x1,  x2,  [sp, #-16]!
 
-    mrs     x10, elr_el1
-    mrs     x9, spsr_el1
-    stp     x9, x10, [sp, #-16]!
+    mrs x9,  sp_el0
+    mrs x10, spsr_el1
+    mrs x11, elr_el1
+
+    stp x9,  x0,  [sp, #-16]!
+    stp x10, x11, [sp, #-16]!
 
     /*
      * Call trap(struct *trapframe).
@@ -57,30 +56,28 @@ trapret:
      */
 
     /* TODO: Your code here. */
-    ldp     x9, x10, [sp], #16
-    msr     spsr_el1, x9
-    msr     elr_el1, x10
+    
+    ldp x9,  x10, [sp], #16
+    ldp x11, x0,  [sp], #16
 
-    ldp     x0, x1, [sp], #16
-    ldp     x2, x3, [sp], #16
-    ldp     x4, x5, [sp], #16
-    ldp     x6, x7, [sp], #16
-    ldp     x8, x9, [sp], #16
-    ldp     x10, x11, [sp], #16
-    ldp     x12, x13, [sp], #16
-    ldp     x14, x15, [sp], #16
-    ldp     x16, x17, [sp], #16
-    ldp     x18, x19, [sp], #16
-    ldp     x20, x21, [sp], #16
-    ldp     x22, x23, [sp], #16
-    ldp     x24, x25, [sp], #16
-    ldp     x26, x27, [sp], #16
-    ldr     x28, [sp], #8
+    msr SPSR_EL1, x9
+    msr ELR_EL1,  x10
+    msr SP_EL0,   x11
 
-    mov     x29, sp
-    ldr     x30, [x29, #16]
-    mov     sp, x30
-    ldr     x30, [x29, #8]
-    ldr     x29, [x29]
+    ldp x1,  x2,  [sp], #16
+    ldp x3,  x4,  [sp], #16
+    ldp x5,  x6,  [sp], #16
+    ldp x7,  x8,  [sp], #16
+    ldp x9,  x10, [sp], #16
+    ldp x11, x12, [sp], #16
+    ldp x13, x14, [sp], #16
+    ldp x15, x16, [sp], #16
+    ldp x17, x18, [sp], #16
+    ldp x19, x20, [sp], #16
+    ldp x21, x22, [sp], #16
+    ldp x23, x24, [sp], #16
+    ldp x25, x26, [sp], #16
+    ldp x27, x28, [sp], #16
+    ldp x29, x30, [sp], #16
 
     eret
