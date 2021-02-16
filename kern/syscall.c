@@ -3,8 +3,9 @@
 #include "proc.h"
 #include "console.h"
 #include "syscallno.h"
+#include "sd.h"
 
-#include "defines.h"
+#include "defs.h"
 
 /* 
  * User code makes a system call with SVC, system call number in r0.

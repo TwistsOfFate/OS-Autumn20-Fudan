@@ -7,7 +7,7 @@
 #include "vm.h"
 #include "mmu.h"
 
-#include "defines.h"
+#include "defs.h"
 
 struct {
     struct proc proc[NPROC];
@@ -353,13 +353,6 @@ set_cpus_allowed(int mask)
     acquire(&ptable.lock);
     p->cpus_allowed = mask;
     release(&ptable.lock);
-}
-
-/* Give up CPU. */
-void
-yield()
-{
-    /* TODO: Your code here. */
 }
 
 /*

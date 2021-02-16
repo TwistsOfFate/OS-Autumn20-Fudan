@@ -52,6 +52,7 @@ interrupt(struct trapframe *tf)
 void
 trap(struct trapframe *tf)
 {
+    struct proc *proc = thiscpu->proc;
     int ec = resr() >> EC_SHIFT, iss = resr() & ISS_MASK;
     lesr(0);  /* Clear esr. */
     switch (ec) {

@@ -22,7 +22,7 @@
 
 #include "proc.h"
 #include "spinlock.h"
-#include "defines.h"
+#include "defs.h"
 
 // Private functions.
 static void sd_start(struct buf *b);
