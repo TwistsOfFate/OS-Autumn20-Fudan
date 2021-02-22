@@ -5,6 +5,7 @@
 
 #include "console.h"
 #include "proc.h"
+#include "defs.h"
 
 static int dt = 19200000;
 

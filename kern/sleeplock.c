@@ -1,4 +1,5 @@
 #include "sleeplock.h"
+#include "defs.h"
 
 void
 initsleeplock(struct sleeplock *lk, char *name)

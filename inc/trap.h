@@ -41,8 +41,5 @@ struct trapframe {
     uint64_t r30;
 };
 
-void trap(struct trapframe *);
-void irq_init();
-void irq_error();
 
 #endif

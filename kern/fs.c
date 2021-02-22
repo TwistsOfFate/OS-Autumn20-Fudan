@@ -23,6 +23,7 @@
 #include "buf.h"
 #include "log.h"
 #include "file.h"
+#include "defs.h"
 
 
 #define min(a, b) ((a) < (b) ? (a) : (b))

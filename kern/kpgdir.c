@@ -2,6 +2,7 @@
 
 #include "memlayout.h"
 #include "mmu.h"
+#include "defs.h"
 
 __attribute__((__aligned__(PGSIZE)))
 uint64_t kpte[512] = {

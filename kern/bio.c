@@ -25,6 +25,7 @@
 #include "console.h"
 #include "sd.h"
 #include "fs.h"
+#include "defs.h"
 
 struct {
     struct spinlock lock;

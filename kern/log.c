@@ -5,6 +5,7 @@
 #include "fs.h"
 #include "buf.h"
 #include "string.h"
+#include "defs.h"
 
 /* Simple logging that allows concurrent FS system calls.
  *

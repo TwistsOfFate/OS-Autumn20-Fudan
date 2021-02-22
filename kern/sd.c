@@ -20,6 +20,7 @@
 #include "peripherals/mbox.h"
 #include "console.h"
 
+#include "buf.h"
 #include "proc.h"
 #include "spinlock.h"
 #include "defs.h"

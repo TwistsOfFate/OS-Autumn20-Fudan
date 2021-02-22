@@ -1,8 +1,6 @@
 #ifndef INC_SD_H
 #define INC_SD_H
 
-#include "buf.h"
-
 #define SD_OK                0
 #define SD_ERROR             1
 #define SD_TIMEOUT           2
@@ -18,10 +16,5 @@
 
 #define SD_READ_BLOCKS       0
 #define SD_WRITE_BLOCKS      1
-
-void sd_init();
-void sd_intr();
-void sdrw(struct buf *);
-void sd_test();
 
 #endif

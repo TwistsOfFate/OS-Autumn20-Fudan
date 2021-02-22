@@ -3,6 +3,7 @@
 #include "console.h"
 #include "proc.h"
 #include "string.h"
+#include "defs.h"
 
 /*
  * Check whether this cpu is holding the lock.
@@ -28,11 +29,9 @@ acquire(struct spinlock *lk)
     if (holding(lk)) {
         panic("acquire: spinlock already held\n");
     }
-    // cprintf("spinlock: waiting for %s\n", lk->name);
     while (lk->locked || __atomic_test_and_set(&lk->locked, __ATOMIC_ACQUIRE))
         ;
     lk->cpu = thiscpu;
-    // cprintf("spinlock: %s acquired\n", lk->name);
 }
 
 void

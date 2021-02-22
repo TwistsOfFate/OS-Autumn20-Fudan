@@ -5,6 +5,7 @@
 #include "arm.h"
 #include "console.h"
 #include "memlayout.h"
+#include "defs.h"
 
 #define VIDEOCORE_MBOX  (MMIO_BASE + 0x0000B880)
 #define MBOX_READ       ((volatile unsigned int*)(VIDEOCORE_MBOX + 0x00))

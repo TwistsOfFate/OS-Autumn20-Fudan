@@ -6,7 +6,6 @@
 #include "string.h"
 #include "vm.h"
 #include "mmu.h"
-
 #include "defs.h"
 
 struct {
@@ -143,14 +142,16 @@ scheduler()
     c->proc = NULL;
 
     int ran;
-    
+
     for (;;) {
         /* Loop over process table looking for process to run. */
         /* TODO: Your code here. */
 
         ran = 0;
         acquire(&ptable.lock);
-
+#ifdef PRINT_TRACE
+        cprintf("scheduler: cpu%d acquired ptable lock\n", cpuid());
+#endif
         for (int pri = 1; pri >= 0 && !ran; --pri) {
             for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
                 if (p->state == RUNNABLE && p->priority == pri && ((p->cpus_allowed >> cpuid()) & 1)) {
@@ -199,6 +200,9 @@ forkret()
 {
     /* TODO: Your code here. */
     release(&ptable.lock);
+#ifdef PRINT_TRACE
+    cprintf("forkret: cpu%d released ptable lock\n", cpuid());
+#endif
 }
 
 /*

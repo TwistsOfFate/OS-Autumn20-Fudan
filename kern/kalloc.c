@@ -6,6 +6,7 @@
 #include "console.h"
 #include "kalloc.h"
 #include "spinlock.h"
+#include "defs.h"
 
 extern char end[];
 

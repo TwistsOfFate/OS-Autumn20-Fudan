@@ -72,20 +72,4 @@ thisproc()
     return thiscpu->proc;
 }
 
-void proc_init();
-void user_init();
-void scheduler();
-
-void yield();
-void exit();
-int fork();
-int wait();
-
-void sleep(void *, struct spinlock *);
-void wakeup(void *);
-
-void drop_priority();
-void raise_priority();
-void set_cpus_allowed(int);
-
 #endif

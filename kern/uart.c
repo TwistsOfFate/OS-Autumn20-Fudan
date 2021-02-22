@@ -5,6 +5,7 @@
 #include "peripherals/mini_uart.h"
 #include "peripherals/gpio.h"
 #include "console.h"
+#include "defs.h"
 
 void
 uart_putchar(int c)

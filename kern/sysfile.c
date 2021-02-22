@@ -16,6 +16,7 @@
 #include "log.h"
 #include "fs.h"
 #include "file.h"
+#include "defs.h"
 
 struct iovec {
     void  *iov_base;    /* Starting address. */

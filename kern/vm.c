@@ -8,6 +8,7 @@
 #include "vm.h"
 #include "kalloc.h"
 #include "proc.h"
+#include "defs.h"
 
 extern uint64_t *kpgdir;
 

@@ -4,6 +4,7 @@
 #include "peripherals/irq.h"
 
 #include "console.h"
+#include "defs.h"
 
 void
 clock_init()

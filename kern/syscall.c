@@ -4,7 +4,6 @@
 #include "console.h"
 #include "syscallno.h"
 #include "sd.h"
-
 #include "defs.h"
 
 /* 
@@ -146,10 +145,12 @@ syscall()
 
     int pid = proc->pid;
 
+    cprintf("syscall: cpu%d, pid %d with %d\n", cpuid(), pid, proc->tf->r0);
+
     switch (proc->tf->r0) {
         case SYS_exec:
             if (cpuid() == 1 && sd_test_pid == 0) {
-                sd_test_pid = thiscpu->proc->pid;
+                sd_test_pid = pid;
                 raise_priority();
                 set_cpus_allowed(~0 ^ 1);               // Don't run on CPU0
 #ifdef PRINT_TRACE

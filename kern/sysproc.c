@@ -3,6 +3,7 @@
 #include "proc.h"
 #include "trap.h"
 #include "console.h"
+#include "defs.h"
 
 int
 sys_exit()

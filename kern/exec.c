@@ -10,6 +10,7 @@
 #include "vm.h"
 #include "proc.h"
 #include "memlayout.h"
+#include "defs.h"
 
 int
 execve(const char *path, char *const argv[], char *const envp[])

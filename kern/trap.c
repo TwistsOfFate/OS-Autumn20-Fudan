@@ -12,6 +12,7 @@
 #include "timer.h"
 #include "proc.h"
 #include "sd.h"
+#include "defs.h"
 
 void
 irq_init()

@@ -9,6 +9,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sd.h"
+#include "defs.h"
 
 struct cpu cpus[NCPU];
 
