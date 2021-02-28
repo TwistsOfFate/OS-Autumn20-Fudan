@@ -300,5 +300,6 @@ int
 sys_exec()
 {
     /* TODO: Your code here. */
+    cprintf("sys_exec\n");
 }
 

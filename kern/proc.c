@@ -170,6 +170,9 @@ scheduler()
             }
         }
 
+#ifdef PRINT_TRACE
+        cprintf("scheduler: cpu%d released ptable lock\n", cpuid());
+#endif
         release(&ptable.lock);
     }
 }

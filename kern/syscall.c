@@ -170,6 +170,7 @@ syscall()
                 return sys_exit();
             }
             else return 0;
+            // return sys_exit();
         default: panic("syscall: unknown syscall\n");
     }
 
