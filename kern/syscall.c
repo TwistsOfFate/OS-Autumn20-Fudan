@@ -144,9 +144,9 @@ syscall()
     static int idle_pid = 0;
 
     int pid = proc->pid;
-
+#ifdef PRINT_TRACE
     cprintf("syscall: cpu%d, pid %d with %d\n", cpuid(), pid, proc->tf->r0);
-
+#endif
     switch (proc->tf->r0) {
         case SYS_exec:
             if (cpuid() == 1 && sd_test_pid == 0) {

@@ -31,7 +31,7 @@ LIBS = $(LIBGCC)
 
 # removed -mno-outline-atomics from CORTEX_A53_FLAGS
 CORTEX_A53_FLAGS := -mcpu=cortex-a53 -mtune=cortex-a53
-CFLAGS := -Wall -g -O2 \
+CFLAGS := -Wall -g \
           -fno-pie -fno-pic -fno-stack-protector \
           -fno-zero-initialized-in-bss \
           -static -fno-builtin -nostdlib -nostdinc -ffreestanding -nostartfiles \
