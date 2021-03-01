@@ -1,0 +1,1 @@
+libc/*, mksd.mk, buf.h, proc.h, trap.h, kalloc.c, main.c, sd.c, swtch.S, syscall.c, trap.c, vm.c
