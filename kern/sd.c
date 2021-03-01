@@ -661,6 +661,13 @@ void
 sdrw(struct buf *b)
 {
     /* TODO: Your code here. */
+    // if (!holdingsleep(&b->lock)) {
+    //     panic("sdrw: buf not locked\n");
+    // }
+    if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID) {
+        panic("sdrw: nothing to do");
+    }
+
     acquire(&sdlock);
     if (list_empty(&sdque)) {
         list_add_tail(&b->node_buf, &sdque);
@@ -668,9 +675,12 @@ sdrw(struct buf *b)
     } else {
         list_add_tail(&b->node_buf, &sdque);
     }
-    sleep(b, &sdlock);
-    release(&sdlock);
 
+    while ((b->flags & (B_VALID | B_DIRTY)) != B_VALID) {
+        sleep(b, &sdlock);
+    }
+    
+    release(&sdlock);
 }
 
 /* SD card test and benchmark. */

@@ -20,6 +20,9 @@ struct buf {
     struct sleeplock lock;
 
     /* TODO: Your code here. */
+    struct buf *prev;
+    struct buf *next;
+
     struct list_head node_buf;
 };
 
