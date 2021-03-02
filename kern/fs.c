@@ -39,6 +39,11 @@ void
 readsb(int dev, struct superblock *sb)
 {
     /* TODO: Your code here. */
+    struct buf *bp;
+
+    bp = bread(dev, 1);
+    memmove(sb, bp->data, sizeof(*sb));
+    brelse(bp);
 }
 
 /* Zero a block. */
@@ -46,6 +51,12 @@ static void
 bzero(int dev, int bno)
 {
     /* TODO: Your code here. */
+    struct buf *bp;
+
+    bp = bread(dev, bno);
+    memset(bp->data, 0, BSIZE);
+    log_write(bp);
+    brelse(bp);
 }
 
 /* Blocks. */
@@ -55,6 +66,25 @@ static uint32_t
 balloc(uint32_t dev)
 {
     /* TODO: Your code here. */
+    int b, bi, m;
+    struct buf *bp;
+
+    bp = 0;
+    for (b = 0; b < sb.size; b += BPB) {
+        bp = bread(dev, BBLOCK(b, sb));
+        for (bi = 0; bi < BPB && b + bi < sb.size; ++bi) {
+            m = 1 << (bi % 8);
+            if ((bp->data[bi/8] & m) == 0) {    // Is block free?
+                bp->data[bi/8] |= m;        // Mark block in use.
+                log_write(bp);
+                brelse(bp);
+                bzero(dev, b + bi);
+                return b + bi;
+            }
+        }
+        brelse(bp);
+    }
+    panic("balloc: out of blocks\n");
 }
 
 /* Free a disk block. */
@@ -62,6 +92,18 @@ static void
 bfree(int dev, uint32_t b)
 {
     /* TODO: Your code here. */
+    struct buf *bp;
+    int bi, m;
+
+    bp = bread(dev, BBLOCK(b, sb));
+    bi = b % BPB;
+    m = 1 << (bi % 8);
+    if ((bp->data[bi/8] & m) == 0) {
+        panic("bfree: freeing free block\n");
+    }
+    bp->data[bi/8] &= ~m;
+    log_write(bp);
+    brelse(bp);
 }
 
 /* Inodes.
