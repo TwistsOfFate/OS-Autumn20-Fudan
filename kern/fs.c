@@ -185,6 +185,18 @@ void
 iinit(int dev)
 {
     /* TODO: Your code here. */
+    int i = 0;
+
+    initlock(&icache.lock, "icache");
+    for (i = 0; i < NINODE; ++i) {
+        initsleeplock(&icache.inode[i].lock, "inode");
+    }
+
+    readsb(dev, &sb);
+    cprintf("sb: size %d nblocks %d ninodes %d nlog %d logstart %d\
+            inodestart %d bmap start %d\n", sb.size, sb.nblocks,
+            sb.ninodes, sb.nlog, sb.logstart, sb.inodestart,
+            sb.bmapstart);
 }
 
 static struct inode* iget(uint32_t dev, uint32_t inum);
@@ -227,6 +239,19 @@ void
 iupdate(struct inode *ip)
 {
     /* TODO: Your code here. */
+    struct buf *bp;
+    struct dinode *dip;
+
+    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+    dip = (struct dinode *)bp->data + ip->inum % IPB;
+    dip->type = ip->type;
+    dip->major = ip->major;
+    dip->minor = ip->minor;
+    dip->nlink = ip->nlink;
+    dip->size = ip->size;
+    memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+    log_write(bp);
+    brelse(bp);
 }
 
 /*
@@ -278,6 +303,10 @@ struct inode*
 idup(struct inode *ip)
 {
     /* TODO: Your code here. */
+    acquire(&icache.lock);
+    ip->ref++;
+    release(&icache.lock);
+    return ip;
 }
 
 /* 
@@ -365,6 +394,8 @@ void
 iunlockput(struct inode *ip)
 {
     /* TODO: Your code here. */
+    iunlock(ip);
+    iput(ip);
 }
 
 /* Inode content
