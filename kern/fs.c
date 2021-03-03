@@ -21,7 +21,6 @@
 #include "sleeplock.h"
 
 #include "buf.h"
-#include "log.h"
 #include "file.h"
 #include "defs.h"
 

@@ -13,7 +13,6 @@
 #include "sleeplock.h"
 #include "string.h"
 #include "console.h"
-#include "log.h"
 #include "fs.h"
 #include "file.h"
 #include "defs.h"

@@ -6,7 +6,6 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "console.h"
-#include "log.h"
 #include "defs.h"
 
 struct devsw devsw[NDEV];

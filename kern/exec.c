@@ -3,7 +3,6 @@
 #include "trap.h"
 
 #include "file.h"
-#include "log.h"
 #include "string.h"
 
 #include "console.h"
