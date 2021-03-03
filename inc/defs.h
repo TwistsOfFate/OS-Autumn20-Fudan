@@ -32,6 +32,12 @@ void            stati(struct inode *, struct stat *);
 ssize_t         readi(struct inode *, char *, size_t, size_t);
 ssize_t         writei(struct inode *, char *, size_t, size_t);
 
+// log.c
+void            initlog(int dev);
+void            log_write(struct buf *);
+void            begin_op();
+void            end_op();
+
 // proc.c
 void            proc_init();
 void            user_init();
