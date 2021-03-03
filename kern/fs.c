@@ -198,6 +198,23 @@ struct inode*
 ialloc(uint32_t dev, short type)
 {
     /* TODO: Your code here. */
+    int inum;
+    struct buf *bp;
+    struct dinode *dip;
+
+    for (inum = 1; inum < sb.ninodes; ++inum) {
+        bp = bread(dev, IBLOCK(inum, sb));
+        dip = (struct dinode*)bp->data + inum % IPB;
+        if (dip->type == 0) {   // a free inode
+            memset(dip, 0, sizeof(*dip));
+            dip->type = type;
+            log_write(bp);      // mark it allocated on the disk
+            brelse(bp);
+            return iget(dev, inum);
+        }
+        brelse(bp);
+    }
+    panic("ialloc: no inodes\n");
 }
 
 /* Copy a modified in-memory inode to disk.
@@ -221,6 +238,36 @@ static struct inode*
 iget(uint32_t dev, uint32_t inum)
 {
     /* TODO: Your code here. */
+    struct inode *ip, *empty;
+
+    acquire(&icache.lock);
+
+    // Is the inode already cached?
+    empty = 0;
+    for (ip = &icache.inode[0]; ip < &icache.inode[NINODE]; ++ip) {
+        if (ip->ref > 0 && ip->dev == dev && ip->inum == inum) {
+            ip->ref++;
+            release(&icache.lock);
+            return ip;
+        }
+        if (empty == 0 && ip->ref == 0) {   // Remember empty slot.
+            empty = ip;
+        }
+
+        // Recycle an inode cache entry.
+        if (empty == 0) {
+            panic("iget: no inodes\n");
+        }
+
+        ip = empty;
+        ip->dev = dev;
+        ip->inum = inum;
+        ip->ref = 1;
+        ip->valid = 0;
+        release(&icache.lock);
+
+        return ip;
+    }
 }
 
 /* 
@@ -241,6 +288,30 @@ void
 ilock(struct inode *ip)
 {
     /* TODO: Your code here. */
+    struct buf *bp;
+    struct dinode *dip;
+
+    if (ip == 0 || ip->ref < 1) {
+        panic("ilock: invalid inode\n");
+    }
+
+    acquiresleep(&ip->lock);
+
+    if (ip->valid == 0) {
+        bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+        dip = (struct dinode*)bp->data + ip->inum % IPB;
+        ip->type = dip->type;
+        ip->major = dip->major;
+        ip->minor = dip->minor;
+        ip->nlink = dip->nlink;
+        ip->size = dip->size;
+        memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+        brelse(bp);
+        ip->valid = 1;
+        if (ip->type == 0) {
+            panic("ilock: no type\n");
+        }
+    }
 }
 
 /* Unlock the given inode. */
@@ -248,6 +319,11 @@ void
 iunlock(struct inode *ip)
 {
     /* TODO: Your code here. */
+    if (ip == 0 || !holdingsleep(&ip->lock) || ip->ref < 1) {
+        panic("iunlock\n");
+    }
+
+    releasesleep(&ip->lock);
 }
 
 /* Drop a reference to an in-memory inode.
@@ -263,6 +339,25 @@ void
 iput(struct inode *ip)
 {
     /* TODO: Your code here. */
+    acquiresleep(&ip->lock);
+    if (ip->valid && ip->nlink == 0) {
+        // QUESTION: releasing so soon?
+        acquire(&icache.lock);
+        int r = ip->ref;
+        release(&icache.lock);
+        if (r == 1) {
+            // inode had no links and other references: truncate and free.
+            itrunc(ip);
+            ip->type = 0;
+            iupdate(ip);
+            ip->valid = 0;
+        }
+    }
+    releasesleep(&ip->lock);
+
+    acquire(&icache.lock);
+    ip->ref--;
+    release(&icache.lock);
 }
 
 /* Common idiom: unlock, then put. */
@@ -286,6 +381,33 @@ static uint32_t
 bmap(struct inode *ip, uint32_t bn)
 {
     /* TODO: Your code here. */
+    uint32_t addr, *a;
+    struct buf *bp;
+
+    if (bn < NDIRECT) {
+        if ((addr = ip->addrs[bn]) == 0) {
+            ip->addrs[bn] = addr = balloc(ip->dev);
+        }
+        return addr;
+    }
+    bn -= NDIRECT;
+
+    if (bn < NINDIRECT) {
+        // Load indirect block, allocating if necessary.
+        if ((addr = ip->addrs[NDIRECT]) == 0) {
+            ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+        }
+        bp = bread(ip->dev, addr);
+        a = (uint32_t *)bp->data;
+        if ((addr = a[bn]) == 0) {
+            a[bn] = addr = balloc(ip->dev);
+            log_write(bp);
+        }
+        brelse(bp);
+        return addr;
+    }
+
+    panic("bmap: out of range\n");
 }
 
 /* Truncate inode (discard contents).
@@ -299,6 +421,32 @@ static void
 itrunc(struct inode *ip)
 {
     /* TODO: Your code here. */
+    int i, j;
+    struct buf *bp;
+    uint32_t *a;
+
+    for (i = 0; i < NDIRECT; ++i) {
+        if (ip->addrs[i]) {
+            bfree(ip->dev, ip->addrs[i]);
+            ip->addrs[i] = 0;
+        }
+    }
+
+    if (ip->addrs[NDIRECT]) {
+        bp = bread(ip->dev, ip->addrs[NDIRECT]);
+        a = (uint32_t *)bp->data;
+        for (j = 0; j < NINDIRECT; ++j) {
+            if (a[j]) {
+                bfree(ip->dev, a[j]);
+            }
+        }
+        brelse(bp);
+        bfree(ip->dev, ip->addrs[NDIRECT]);
+        ip->addrs[NDIRECT] = 0;
+    }
+
+    ip->size = 0;
+    iupdate(ip);
 }
 
 /*
