@@ -115,69 +115,12 @@ argstr(int n, char **pp)
 extern int sys_exec();
 extern int sys_exit();
 
-/* 
- * in ARM, parameters to main (argc, argv) are passed in r0 and r1
- * do not set the return value if it is SYS_exec (the user program
- * anyway does not expect us to return anything).
- */
-/* syscall handler */
-// int
-// syscall0()
-// {
-//     struct proc *proc = thiscpu->proc;
-//     /*
-//      * Determine the cause and then jump to the corresponding handle
-//      * the handler may look like
-//      * switch (syscall number) {
-//      *      SYS_XXX:
-//      *          return sys_XXX();
-//      *      SYS_YYY:
-//      *          return sys_YYY();
-//      *      default:
-//      *          panic("syscall: unknown syscall %d\n", syscall number)
-//      * }
-//      */
-//     /* TODO: Your code here. */
-//     static int sd_test_pid = 0;
-//     static int sd_test_done = 0;
-//     static int idle_pid = 0;
-
-//     int pid = proc->pid;
-// #ifdef PRINT_TRACE
-//     cprintf("syscall: cpu%d, pid %d with %d\n", cpuid(), pid, proc->tf->r0);
-// #endif
-//     switch (proc->tf->r0) {
-//         case SYS_exec:
-//             if (cpuid() == 1 && sd_test_pid == 0) {
-//                 sd_test_pid = pid;
-//                 raise_priority();
-//                 set_cpus_allowed(~0 ^ 1);               // Don't run on CPU0
-//                 cprintf("-------------- start fs_test --------------\n");
-//                 test_file_system();
-//                 cprintf("-------------- end fs_test --------------\n");
-//                 // sd_test(); 
-//             } else if (cpuid() == 0) {
-//                 set_cpus_allowed(1);
-//             }
-//             return sys_exec();
-//         case SYS_exit:
-//             if (thiscpu->proc->pid == sd_test_pid || sd_test_done) {
-//                 sd_test_done = 1;
-//                 return sys_exit();
-//             }
-//             else return 0; 
-//             // return sys_exit();
-//         default: panic("syscall: unknown syscall\n");
-//     }
-
-//     return 0;
-// }
-
 int
 syscall1(struct trapframe *tf)
 {
     thisproc()->tf = tf;
     int sysno = tf->r8;
+    // cprintf("syscall1: sysno=%d, r0=%s\n", sysno, tf->r0);
     switch (sysno) {
         // FIXME: Use pid instead of tid since we don't have threads :)
         case SYS_set_tid_address:
@@ -195,6 +138,10 @@ syscall1(struct trapframe *tf)
         case SYS_brk:
             return sys_brk();
         case SYS_execve:
+            cprintf("syscall1: pid %d\n", thisproc()->pid);
+            if (strcmp(tf->r0, "/init\0") == 0 && thisproc()->pid != 1) {
+                return 0;
+            }
             return sys_exec();
         case SYS_sched_yield:
             return sys_yield();

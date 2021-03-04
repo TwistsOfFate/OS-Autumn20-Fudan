@@ -341,6 +341,37 @@ int
 sys_exec()
 {
     /* TODO: Your code here. */
+    char* path;
+    char* argv[1 << 6];
+    uint64_t uargv;
+
     cprintf("sys_exec\n");
+
+    if (argstr(0, &path) < 0 ||
+        argint(1, (long*)&uargv) < 0) {
+        return -1;
+    }
+    memset(argv, 0, sizeof(argv));
+    uint64_t uarg;
+    for (int i = 0; i <= (1 << 6); i++) {
+        if (i == (1 << 6)) {
+            return -1;
+        }
+        if (fetchint(uargv + (i << 3), (long*)&uarg) < 0) {
+            return -1;
+            
+        }
+        if (uarg == 0) {
+            argv[i] = 0;
+            break;
+        }
+
+        if (fetchstr(uarg, &argv[i]) < 0) {
+            return -1;
+        } 
+    }
+
+    cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
+    return execve(path, argv, (char**)0);
 }
 

@@ -5,6 +5,9 @@
 
 struct trapframe {
     /* TODO: Design your own trapframe layout here. */
+    __uint128_t q0;
+    uint64_t tpidr;
+    uint64_t tpidr_copy; // make sp 16B aligned
     uint64_t elr;
     uint64_t spsr;
     uint64_t sp;

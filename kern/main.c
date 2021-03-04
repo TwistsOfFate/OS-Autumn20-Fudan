@@ -62,6 +62,11 @@ main()
 
     cprintf("main: [CPU%d] Init success.\n", cpuid());
 
+    // if (cpuid() > 4) {
+    //     while (1)
+    //         ;
+    // }
+
     scheduler();
 
 }
