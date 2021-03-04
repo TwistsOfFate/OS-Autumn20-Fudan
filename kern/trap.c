@@ -3,7 +3,7 @@
 #include "arm.h"
 #include "sysregs.h"
 #include "mmu.h"
-#include "syscall.h"
+#include <syscall.h>
 #include "peripherals/irq.h"
 
 #include "uart.h"
@@ -66,7 +66,7 @@ trap(struct trapframe *tf)
             /* Jump to syscall to handle the system call from user process */
             /* TODO: Your code here. */
             proc->tf = tf;
-            syscall();
+            syscall1();
         } else {
             cprintf("unexpected svc iss 0x%x\n", iss);
         }

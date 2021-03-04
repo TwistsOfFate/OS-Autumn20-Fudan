@@ -53,8 +53,6 @@ fdalloc(struct file *f)
     /* TODO: Your code here. */
 }
 
-#include "syscallno.h"
-
 int
 sys_dup()
 {

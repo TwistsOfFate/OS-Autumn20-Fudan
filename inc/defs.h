@@ -84,7 +84,7 @@ int             fetchstr(uint64_t, char **);
 int             argint(int, uint64_t *);
 int             argptr(int, char **, int);
 int             argstr(int, char **);
-int             syscall();
+int             syscall1();
 
 // sysfile.c
 struct inode *  create(char *path, short type, short major, short minor);

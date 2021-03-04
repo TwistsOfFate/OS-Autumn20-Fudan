@@ -206,17 +206,19 @@ forkret()
 {
     /* TODO: Your code here. */
     release(&ptable.lock);
-#ifdef PRINT_TRACE
-    cprintf("forkret: cpu%d released ptable lock\n", cpuid());
-#endif
 
-    if (cpuid() == 1) {
+    if (thiscpu->proc->pid == 1) {
         // Some initialization functions must be run in the context
         // of a regular process (e.g., they call sleep), and thus cannot
         // be run from main().
-        // iinit(ROOTDEV);
         iinit(ROOTDEV);
         initlog(ROOTDEV);
+
+        raise_priority();
+        set_cpus_allowed(~0 ^ 1);       // Don't run on CPU0.
+        cprintf("-------------- start fs_test --------------\n");
+        test_file_system();
+        cprintf("-------------- end fs_test --------------\n");
     }
 }
 
