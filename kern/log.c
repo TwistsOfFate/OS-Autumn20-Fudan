@@ -65,6 +65,10 @@ initlog(int dev)
     struct superblock sb;
     initlock(&log.lock, "log");
     readsb(dev, &sb);
+    log.start = sb.logstart;
+    log.size = sb.nlog;
+    log.dev = dev;
+    recover_from_log();
 }
 
 /* Copy committed blocks from log to their home location. */
@@ -240,10 +244,10 @@ log_write(struct buf *b)
 
     acquire(&log.lock);
     for (i = 0; i < log.lh.n; ++i) {
-        if (log.lh.block[i] == b->blockno) {    // log absorption
+        if (log.lh.block[i] == b->blockno - MBR_BASE) {    // log absorption
             break;
         }
-        log.lh.block[i] = b->blockno;
+        log.lh.block[i] = b->blockno - MBR_BASE;
         if (i == log.lh.n) {
             log.lh.n++;
         }

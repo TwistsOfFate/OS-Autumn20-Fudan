@@ -47,6 +47,8 @@ main()
             user_init();
         }
         
+        binit();
+        fileinit();
         sd_init();
 
         started = 1;

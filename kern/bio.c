@@ -66,6 +66,7 @@ static struct buf *
 bget(uint32_t dev, uint32_t blockno)
 {
     /* TODO: Your code here. */
+    cprintf("bget(%d, %d)\n", dev, blockno);
     struct buf *b;
 
     acquire(&bcache.lock);
@@ -103,11 +104,16 @@ bread(uint32_t dev, uint32_t blockno)
 {
     /* TODO: Your code here. */
     struct buf *b;
+    cprintf("bread(%d, %d)\n", dev, blockno);
 
-    b = bget(dev, blockno);
+    b = bget(dev, blockno + MBR_BASE);
+    cprintf("bread0: %d %d %d %d\n", b->flags, b->dev, b->blockno, b->refcnt);
+    printbufassb(b);
     if ((b->flags & B_VALID) == 0) {
         sdrw(b);
     }
+    cprintf("bread1: %d %d %d %d\n", b->flags, b->dev, b->blockno, b->refcnt);
+    printbufassb(b);
     return b;
 }
 

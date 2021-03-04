@@ -1,10 +1,16 @@
 #ifndef INC_DEFS_H
 #define INC_DEFS_H
 
+#include "types.h"
+
 // #define PRINT_TRACE
 
 struct buf;
+struct file;
+struct inode;
 struct spinlock;
+struct stat;
+struct superblock;
 struct trapframe;
 
 // bio.c
@@ -13,7 +19,17 @@ void            bwrite(struct buf *b);
 void            brelse(struct buf *b);
 struct buf *    bread(uint32_t dev, uint32_t blockno);
 
+// file.c
+void            fileinit();
+struct file *   filealloc();
+struct file *   filedup(struct file *f);
+void            fileclose(struct file *f);
+int             filestat(struct file *f, struct stat *st);
+ssize_t         fileread(struct file *f, char *addr, ssize_t n);
+ssize_t         filewrite(struct file *f, char *addr, ssize_t n);
+
 // fs.c
+void            printbufassb(struct buf *);
 void            readsb(int, struct superblock *);
 int             dirlink(struct inode *, char *, uint32_t);
 struct inode *  dirlookup(struct inode *, char *, size_t *);
@@ -71,9 +87,15 @@ int             argptr(int, char **, int);
 int             argstr(int, char **);
 int             syscall();
 
+// sysfile.c
+struct inode *  create(char *path, short type, short major, short minor);
+
 // trap.c
 void            trap(struct trapframe *);
 void            irq_init();
 void            irq_error();
+
+// fstest.c
+void            test_file_system();
 
 #endif

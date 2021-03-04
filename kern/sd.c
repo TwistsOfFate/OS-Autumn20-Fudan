@@ -667,6 +667,7 @@ sdrw(struct buf *b)
     if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID) {
         panic("sdrw: nothing to do");
     }
+    cprintf("sdrw: %d %d %d %d\n", b->flags, b->dev, b->blockno, b->refcnt);
 
     acquire(&sdlock);
     if (list_empty(&sdque)) {
@@ -676,6 +677,8 @@ sdrw(struct buf *b)
         list_add_tail(&b->node_buf, &sdque);
     }
 
+    if ((b->flags & (B_VALID | B_DIRTY)) != B_VALID)
+        cprintf("sdrw: slept\n");
     while ((b->flags & (B_VALID | B_DIRTY)) != B_VALID) {
         sleep(b, &sdlock);
     }

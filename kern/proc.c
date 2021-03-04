@@ -6,6 +6,7 @@
 #include "string.h"
 #include "vm.h"
 #include "mmu.h"
+#include "fs.h"
 #include "defs.h"
 
 struct {
@@ -206,6 +207,15 @@ forkret()
 #ifdef PRINT_TRACE
     cprintf("forkret: cpu%d released ptable lock\n", cpuid());
 #endif
+
+    if (cpuid() == 1) {
+        // Some initialization functions must be run in the context
+        // of a regular process (e.g., they call sleep), and thus cannot
+        // be run from main().
+        // iinit(ROOTDEV);
+        cprintf("initlog\n");
+        initlog(ROOTDEV);
+    }
 }
 
 /*

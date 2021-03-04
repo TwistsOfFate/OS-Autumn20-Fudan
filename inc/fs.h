@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#define MBR_BASE        0x20800
+
 // Kernel only
 #define NDEV            10                  // Maximum major device number
 #define NINODE          50                  // Maximum number of active i-nodes

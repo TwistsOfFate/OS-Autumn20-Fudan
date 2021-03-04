@@ -46,11 +46,4 @@ struct devsw {
 
 extern struct devsw devsw[];
 
-struct file *   filealloc();
-struct file *   filedup(struct file *f);
-void            fileclose(struct file *f);
-int             filestat(struct file *f, struct stat *st);
-ssize_t         fileread(struct file *f, char *addr, ssize_t n);
-ssize_t         filewrite(struct file *f, char *addr, ssize_t n);
-
 #endif

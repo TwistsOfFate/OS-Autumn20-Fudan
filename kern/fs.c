@@ -33,6 +33,16 @@ static void itrunc(struct inode*);
 // but we run with only one device.
 struct superblock sb; 
 
+void
+printbufassb(struct buf *bp)
+{
+    struct superblock sb;
+    memmove(&sb, bp->data, sizeof(sb));
+    cprintf("%d %d %d %d %d %d\n",
+        sb.size, sb.nblocks, sb.ninodes,
+        sb.nlog, sb.logstart, sb.inodestart);
+}
+
 /* Read the super block. */
 void
 readsb(int dev, struct superblock *sb)
@@ -43,6 +53,9 @@ readsb(int dev, struct superblock *sb)
     bp = bread(dev, 1);
     memmove(sb, bp->data, sizeof(*sb));
     brelse(bp);
+    cprintf("readsb: %d %d %d %d %d %d\n",
+        sb->size, sb->nblocks, sb->ninodes,
+        sb->nlog, sb->logstart, sb->inodestart); 
 }
 
 /* Zero a block. */
@@ -98,11 +111,12 @@ bfree(int dev, uint32_t b)
     bi = b % BPB;
     m = 1 << (bi % 8);
     if ((bp->data[bi/8] & m) == 0) {
-        panic("bfree: freeing free block\n");
+        panic("bfree: freeing a free block, dev %d, blockno %u\n", dev, b);
     }
     bp->data[bi/8] &= ~m;
     log_write(bp);
     brelse(bp);
+    cprintf("bfree: freed dev %d, blockno %u\n", dev, b);
 }
 
 /* Inodes.
@@ -324,9 +338,12 @@ ilock(struct inode *ip)
     }
 
     acquiresleep(&ip->lock);
+    cprintf("ilock: acquiredsleep\n");
 
     if (ip->valid == 0) {
+        cprintf("ilock: 0\n");
         bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+        cprintf("ilock: 1\n");
         dip = (struct dinode*)bp->data + ip->inum % IPB;
         ip->type = dip->type;
         ip->major = dip->major;
@@ -334,7 +351,9 @@ ilock(struct inode *ip)
         ip->nlink = dip->nlink;
         ip->size = dip->size;
         memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+        cprintf("ilock: 2\n");
         brelse(bp);
+        cprintf("ilock: 3\n");
         ip->valid = 1;
         if (ip->type == 0) {
             panic("ilock: no type\n");

@@ -156,7 +156,9 @@ syscall()
 #ifdef PRINT_TRACE
                 cprintf("sd_test pid %d\n", sd_test_pid);
 #endif
-                sd_test(); 
+                cprintf("start fs_test\n");
+                test_file_system();
+                // sd_test(); 
             } else if (cpuid() == 0) {
                 set_cpus_allowed(1);
             }
