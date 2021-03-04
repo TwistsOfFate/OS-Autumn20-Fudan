@@ -216,7 +216,6 @@ forkret()
         // be run from main().
         // iinit(ROOTDEV);
         iinit(ROOTDEV);
-        cprintf("initlog\n");
         initlog(ROOTDEV);
     }
 }

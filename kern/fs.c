@@ -43,9 +43,6 @@ readsb(int dev, struct superblock *sb)
     bp = bread(dev, 1);
     memmove(sb, bp->data, sizeof(*sb));
     brelse(bp);
-    cprintf("readsb: %d %d %d %d %d %d\n",
-        sb->size, sb->nblocks, sb->ninodes,
-        sb->nlog, sb->logstart, sb->inodestart); 
 }
 
 /* Zero a block. */
@@ -329,12 +326,9 @@ ilock(struct inode *ip)
     }
 
     acquiresleep(&ip->lock);
-    cprintf("ilock: acquiredsleep\n");
 
     if (ip->valid == 0) {
-        cprintf("ilock: 0\n");
         bp = bread(ip->dev, IBLOCK(ip->inum, sb));
-        cprintf("ilock: 1\n");
         dip = (struct dinode *)bp->data + ip->inum % IPB;
         ip->type = dip->type;
         ip->major = dip->major;
@@ -342,9 +336,7 @@ ilock(struct inode *ip)
         ip->nlink = dip->nlink;
         ip->size = dip->size;
         memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
-        cprintf("ilock: 2\n");
         brelse(bp);
-        cprintf("ilock: 3\n");
         ip->valid = 1;
         if (ip->type == 0) {
             panic("ilock: no type\n");
@@ -707,8 +699,6 @@ namex(char *path, int nameiparent, char *name)
     else
         ip = idup(thiscpu->proc->cwd);
     
-    cprintf("namex: ip=%d\n", ip);
-
     while ((path = skipelem(path, name)) != 0) {
         ilock(ip);
         if (ip->type != T_DIR) {
@@ -738,7 +728,6 @@ struct inode *
 namei(char *path)
 {
     char name[DIRSIZ];
-    cprintf("namei: %s\n", path);
     return namex(path, 0, name);
 }
 
