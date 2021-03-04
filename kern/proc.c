@@ -213,6 +213,7 @@ forkret()
         // of a regular process (e.g., they call sleep), and thus cannot
         // be run from main().
         // iinit(ROOTDEV);
+        iinit(ROOTDEV);
         cprintf("initlog\n");
         initlog(ROOTDEV);
     }

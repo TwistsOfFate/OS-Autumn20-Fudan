@@ -29,7 +29,6 @@ ssize_t         fileread(struct file *f, char *addr, ssize_t n);
 ssize_t         filewrite(struct file *f, char *addr, ssize_t n);
 
 // fs.c
-void            printbufassb(struct buf *);
 void            readsb(int, struct superblock *);
 int             dirlink(struct inode *, char *, uint32_t);
 struct inode *  dirlookup(struct inode *, char *, size_t *);
@@ -97,5 +96,8 @@ void            irq_error();
 
 // fstest.c
 void            test_file_system();
+
+// debug.c
+void            printbufassb(struct buf *);
 
 #endif

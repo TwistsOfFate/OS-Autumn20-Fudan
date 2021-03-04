@@ -33,16 +33,6 @@ static void itrunc(struct inode*);
 // but we run with only one device.
 struct superblock sb; 
 
-void
-printbufassb(struct buf *bp)
-{
-    struct superblock sb;
-    memmove(&sb, bp->data, sizeof(sb));
-    cprintf("%d %d %d %d %d %d\n",
-        sb.size, sb.nblocks, sb.ninodes,
-        sb.nlog, sb.logstart, sb.inodestart);
-}
-
 /* Read the super block. */
 void
 readsb(int dev, struct superblock *sb)
@@ -344,7 +334,7 @@ ilock(struct inode *ip)
         cprintf("ilock: 0\n");
         bp = bread(ip->dev, IBLOCK(ip->inum, sb));
         cprintf("ilock: 1\n");
-        dip = (struct dinode*)bp->data + ip->inum % IPB;
+        dip = (struct dinode *)bp->data + ip->inum % IPB;
         ip->type = dip->type;
         ip->major = dip->major;
         ip->minor = dip->minor;
