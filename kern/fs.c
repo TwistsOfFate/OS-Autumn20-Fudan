@@ -281,21 +281,21 @@ iget(uint32_t dev, uint32_t inum)
         if (empty == 0 && ip->ref == 0) {   // Remember empty slot.
             empty = ip;
         }
-
-        // Recycle an inode cache entry.
-        if (empty == 0) {
-            panic("iget: no inodes\n");
-        }
-
-        ip = empty;
-        ip->dev = dev;
-        ip->inum = inum;
-        ip->ref = 1;
-        ip->valid = 0;
-        release(&icache.lock);
-
-        return ip;
     }
+
+    // Recycle an inode cache entry.
+    if (empty == 0) {
+        panic("iget: no inodes\n");
+    }
+
+    ip = empty;
+    ip->dev = dev;
+    ip->inum = inum;
+    ip->ref = 1;
+    ip->valid = 0;
+    release(&icache.lock);
+
+    return ip;
 }
 
 /* 
