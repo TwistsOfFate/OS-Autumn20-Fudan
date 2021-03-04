@@ -9,7 +9,7 @@ start:
     ldr     x0, =init
     ldr     x1, =argv
     mov     x8, #SYS_execve
-    //svc     0x00
+    svc     0x00
 
 loop:
     b       loop

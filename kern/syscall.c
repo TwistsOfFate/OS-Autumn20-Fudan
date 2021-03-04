@@ -65,7 +65,7 @@ argint(int n, uint64_t *ip)
 
     struct proc *proc = thiscpu->proc;
 
-    // *ip = *(&proc->tf->r1 + n);
+    *ip = *(&proc->tf->r0 + n);
 
     return 0;
 }
@@ -120,6 +120,7 @@ syscall1(struct trapframe *tf)
 {
     thisproc()->tf = tf;
     int sysno = tf->r8;
+    int tret;
     // cprintf("syscall1: sysno=%d, r0=%s\n", sysno, tf->r0);
     switch (sysno) {
         // FIXME: Use pid instead of tid since we don't have threads :)
@@ -138,11 +139,12 @@ syscall1(struct trapframe *tf)
         case SYS_brk:
             return sys_brk();
         case SYS_execve:
-            cprintf("syscall1: pid %d\n", thisproc()->pid);
             if (strcmp(tf->r0, "/init\0") == 0 && thisproc()->pid != 1) {
                 return 0;
             }
-            return sys_exec();
+            tret = sys_exec();
+            cprintf("sys_exec()=%d\n", tret);
+            return tret;
         case SYS_sched_yield:
             return sys_yield();
         case SYS_clone:

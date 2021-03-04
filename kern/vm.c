@@ -5,7 +5,6 @@
 #include "memlayout.h"
 #include "console.h"
 
-#include "vm.h"
 #include "kalloc.h"
 #include "proc.h"
 #include "defs.h"
@@ -150,6 +149,105 @@ uvm_switch(struct proc *p)
         panic("uvm_switch: no pgdir\n");
 
     lttbr0((uint64_t)V2P(p->pgdir));
+}
+
+/*
+ * Allocate page tables and physical memory to grow process from oldsz to
+ * newsz, which need not be page aligned. Returns new size or 0 on error.
+ */
+int
+uvm_alloc(uint64_t *pgdir, uint64_t oldsz, uint64_t newsz)
+{
+    char *mem;
+    uint64_t a;
+
+    if (newsz >= KERNBASE) {
+        return 0;
+    }
+    if (newsz < oldsz) {
+        return oldsz;
+    }
+
+    a = ROUNDUP(oldsz, PGSIZE);
+    for (; a < newsz; a += PGSIZE) {
+        mem = kalloc();
+        if (mem == 0) {
+            cprintf("uvm_alloc: out of memory\n");
+            uvm_dealloc(pgdir, newsz, oldsz);
+            return 0;
+        }
+        memset(mem, 0, PGSIZE);
+        if (map_region(pgdir, (char *)a, PGSIZE, V2P(mem), PTE_RW|PTE_USER) < 0) {
+            cprintf("uvm_alloc: out of memory (2)\n");
+            uvm_dealloc(pgdir, newsz, oldsz);
+            kfree(mem);
+            return 0;
+        }
+    }
+    return newsz;
+}
+
+/* 
+ * Deallocate user pages to bring the process size from oldsz to
+ * newsz. oldsz and newsz need not be page-aligned, nor does newsz
+ * need to be less than oldsx. oldsz can be larger than the actual
+ * process size. Returns the new process size.
+ */
+int
+uvm_dealloc(uint64_t *pgdir, uint64_t oldsz, uint64_t newsz)
+{
+    uint64_t *pte;
+    uint64_t a, pa;
+
+    if (newsz >= oldsz) {
+        return oldsz;
+    }
+
+    a = ROUNDUP(newsz, PGSIZE);
+    for (; a < oldsz; a += PGSIZE) {
+        pte = pgdir_walk(pgdir, (char *)a, 0);
+        if (!pte) {
+            a = ROUNDUP(a, BKSIZE);
+        } else if ((*pte & PTE_P) != 0) {
+            pa = PTE_ADDR(*pte);
+            if (pa == 0) {
+                panic("uvm_dealloc\n");
+            }
+            char *v = P2V(pa);
+            kfree(v);
+            *pte = 0;
+        }
+    }
+    return newsz;
+}
+
+/*
+ * Load a program segment into pgdir. addr must be page-aligned
+ * and the pages from addr to addr+sz must already be mapped.
+ */
+int
+uvm_load(uint64_t *pgdir, char *addr, struct inode *ip, uint64_t offset, uint64_t sz) {
+    uint64_t i, pa, n;
+    uint64_t *pte;
+
+    if ((uint64_t) addr % PGSIZE != 0) {
+        panic("uvm_load: addr must be page aligned\n");
+    }
+    for (i = 0; i < sz; i += PGSIZE) {
+        if ((pte = pgdir_walk(pgdir, addr + i, 0)) == 0) {
+            panic("uvm_load: address should exist\n");
+        }
+        pa = PTE_ADDR(*pte);
+        if (sz - i < PGSIZE) {
+            n = sz - i;
+        } else {
+            n = PGSIZE;
+        }
+        if (readi(ip, P2V(pa), offset + i, n) != n) {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 /*

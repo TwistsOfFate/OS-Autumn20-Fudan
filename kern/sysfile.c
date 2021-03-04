@@ -345,10 +345,7 @@ sys_exec()
     char* argv[1 << 6];
     uint64_t uargv;
 
-    cprintf("sys_exec\n");
-
-    if (argstr(0, &path) < 0 ||
-        argint(1, (long*)&uargv) < 0) {
+    if (argstr(0, &path) < 0 || argint(1, (long *)&uargv) < 0) {
         return -1;
     }
     memset(argv, 0, sizeof(argv));
@@ -357,9 +354,8 @@ sys_exec()
         if (i == (1 << 6)) {
             return -1;
         }
-        if (fetchint(uargv + (i << 3), (long*)&uarg) < 0) {
+        if (fetchint(uargv + (i << 3), (long *)&uarg) < 0) {
             return -1;
-            
         }
         if (uarg == 0) {
             argv[i] = 0;
@@ -372,6 +368,6 @@ sys_exec()
     }
 
     cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
-    return execve(path, argv, (char**)0);
+    return execve(path, argv, (char **)0);
 }
 

@@ -4,7 +4,6 @@
 #include "kalloc.h"
 #include "trap.h"
 #include "string.h"
-#include "vm.h"
 #include "mmu.h"
 #include "fs.h"
 #include "defs.h"
@@ -213,15 +212,14 @@ forkret()
         // be run from main().
         iinit(ROOTDEV);
         initlog(ROOTDEV);
-        cprintf("forkret: pid 1 done\n");
 
-// #ifdef TEST_FILE_SYSTEM
+#ifdef TEST_FILE_SYSTEM
         raise_priority();
         set_cpus_allowed(~0 ^ 1);       // Don't run on CPU0.
         cprintf("-------------- start fs_test --------------\n");
         test_file_system();
         cprintf("-------------- end fs_test --------------\n");
-// #endif
+#endif
     }
 }
 

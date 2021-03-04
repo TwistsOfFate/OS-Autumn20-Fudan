@@ -19,6 +19,9 @@ void            bwrite(struct buf *b);
 void            brelse(struct buf *b);
 struct buf *    bread(uint32_t dev, uint32_t blockno);
 
+// exec.c
+int             execve(const char *path, char *const argv[], char *const envp[]);
+
 // file.c
 void            fileinit();
 struct file *   filealloc();
@@ -93,6 +96,17 @@ struct inode *  create(char *path, short type, short major, short minor);
 void            trap(struct trapframe *);
 void            irq_init();
 void            irq_error();
+
+// vm.c
+void            vm_free(uint64_t *, int);
+uint64_t *      pgdir_init();
+void            uvm_init(uint64_t *, char *, int);
+void            uvm_switch(struct proc *);
+int             uvm_alloc(uint64_t *, uint64_t, uint64_t);
+int             uvm_dealloc(uint64_t *, uint64_t, uint64_t);
+int             uvm_load(uint64_t *, char *, struct inode *, uint64_t, uint64_t);
+void            test_mem();
+
 
 // fstest.c
 void            test_file_system();
