@@ -51,24 +51,62 @@ static int
 fdalloc(struct file *f)
 {
     /* TODO: Your code here. */
+    for (int i = 0; i < NOFILE; i++) {
+        if (thisproc()->ofile[i] == 0) {
+            thisproc()->ofile[i] = f;
+            return i;
+        } 
+    }
+    return -1;
 }
 
 int
 sys_dup()
 {
     /* TODO: Your code here. */
+    struct file* f;
+    if (argfd(0, 0, &f) < 0) {
+        return -1;
+    }
+
+    int fd = fdalloc(f);
+    if (fd < 0) {
+        return -1;
+    }
+    filedup(f);
+    return fd;
 }
 
 ssize_t
 sys_read()
 {
     /* TODO: Your code here. */
+    struct file* f;
+    char* addr;
+    ssize_t n;
+
+    if (argfd(0, 0, &f) < 0 ||
+        argint(2, &n) < 0 ||
+        argptr(1, &addr, n) < 0) {
+        return -1;
+    } 
+    return fileread(f, addr, n);
 }
 
 ssize_t
 sys_write()
 {
     /* TODO: Your code here. */
+    struct file* f;
+    char* addr;
+    ssize_t n;
+
+    if (argfd(0, 0, &f) < 0 ||
+        argint(2, &n) < 0 ||
+        argptr(1, &addr, n) < 0) {
+        return -1;
+    } 
+    return filewrite(f, addr, n);
 }
 
 
@@ -99,18 +137,55 @@ sys_writev()
      * return tot;
      * ```
      */
+
+    struct file *f;
+    int64_t fd, iovcnt;
+    struct iovec *iov;
+    if (argfd(0, &fd, &f) < 0 ||
+        argint(2, &iovcnt) < 0 ||
+        argptr(1, &iov, iovcnt * sizeof(struct iovec)) < 0) {
+        return -1;
+    }
+    size_t tot = 0;
+    for (struct iovec* p = iov; p < iov + iovcnt; p++) {
+        if (0) {
+            return -1;
+        } 
+        tot += filewrite(f, p->iov_base, p->iov_len);
+    }
+    return tot;
 }
 
 int
 sys_close()
 {
     /* TODO: Your code here. */
+    struct file *f;
+    int fd;
+    
+    if(argfd(0, &fd, &f) < 0) {
+        return -1;
+    }
+
+    thisproc()->ofile[fd] = 0;
+    fileclose(f);
+
+    return 0;
 }
 
 int
 sys_fstat()
 {
     /* TODO: Your code here. */
+    struct file *f;
+    struct stat *st;
+
+    if (argfd(0, 0, &f) < 0 ||
+        argptr(1, (void*)&st, sizeof(*st)) < 0) {
+        return -1;
+    }
+
+    return filestat(f, st);
 }
 
 int

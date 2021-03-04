@@ -386,6 +386,38 @@ int
 fork()
 {
     /* TODO: Your code here. */
+    struct proc* p = proc_alloc();
+    if (p == 0) {
+        return -1;
+    } 
+    
+    // uvm copy
+    p->pgdir = copyuvm(thisproc()->pgdir, thisproc()->sz);
+    if (p->pgdir == 0) {
+        kfree(p->kstack);
+        p->kstack = 0;
+        p->state = UNUSED;
+        return -1;
+    } 
+    
+    p->sz = thisproc()->sz;
+    memcpy(p->tf, thisproc()->tf, sizeof(*p->tf));
+    p->tf->r0 = 0;
+    p->parent = thisproc();
+    
+    
+    
+    // file descriptor
+    for (int i = 0; i < NOFILE; i++) {
+        if (thisproc()->ofile[i]) {
+            p->ofile[i] = filedup(thisproc()->ofile[i]);
+        } 
+    }
+    
+    p->cwd = idup(thisproc()->cwd);
+    p->state = RUNNABLE;
+    
+    return p->pid;
 }
 
 /*
@@ -396,6 +428,34 @@ int
 wait()
 {
     /* TODO: Your code here. */
+    acquire(&ptable.lock);
+    while (1) {
+        int havekids = 0;
+        for (struct proc* p = ptable.proc; p < ptable.proc + NPROC; p++) {
+            if (p->parent != thisproc()) {
+                continue;
+            } 
+            havekids = 1;
+            if (p->state == ZOMBIE) {
+                int pid = p->pid;
+                
+                p->killed = 0;
+                p->state = UNUSED;
+                p->pid = 0;
+                p->parent = 0;
+                vm_free(p->pgdir, 1);
+                kfree(p->kstack);
+                
+                release(&ptable.lock);
+                return pid;
+            } 
+        }
+        if (havekids == 0 || thisproc()->killed) {
+            release(&ptable.lock);
+            return -1;
+        } 
+        sleep(thisproc(), &ptable.lock);
+    }
 }
 
 /*
@@ -407,5 +467,28 @@ void
 procdump()
 {
     panic("unimplemented");
+}
+
+int growproc(int n)
+{
+    uint64_t sz;
+
+    sz = thisproc()->sz;
+
+    if(n > 0){
+        if((sz = uvm_alloc(thisproc()->pgdir, sz, sz + n)) == 0) {
+            return -1;
+        }
+
+    } else if(n < 0){
+        if((sz = uvm_dealloc(thisproc()->pgdir, sz, sz + n)) == 0) {
+            return -1;
+        }
+    }
+
+    thisproc()->sz = sz;
+    uvm_switch(thisproc());
+
+    return 0;
 }
 

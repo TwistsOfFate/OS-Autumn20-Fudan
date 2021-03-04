@@ -69,6 +69,7 @@ void            wakeup(void *);
 void            drop_priority();
 void            raise_priority();
 void            set_cpus_allowed(int);
+int             growproc(int);
 
 // sd.c
 void            sd_init();
@@ -108,6 +109,7 @@ int             uvm_load(uint64_t *, char *, struct inode *, uint64_t, uint64_t)
 void            clearpteu(uint64_t *, char *);
 int             copyout(uint64_t *, uint64_t, void *, uint64_t);
 char *          uva2ka(uint64_t *, char *);
+uint64_t *      copyuvm(uint64_t *, uint64_t);
 void            test_mem();
 
 

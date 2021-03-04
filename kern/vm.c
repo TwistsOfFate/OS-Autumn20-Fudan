@@ -91,16 +91,22 @@ void
 vm_free(uint64_t *pgdir, int level)
 {
     /* TODO: Your code here. */
-    for (int i = 0; i < (PGSIZE >> 3); ++i) {
-        uint64_t pte = pgdir[i];
-        if ((pte & PTE_P) && (pte & PTE_TABLE)) {
-            /* This PTE points to a lower-level page table. */
-            uint64_t child = (uint64_t)P2V(PTE_ADDR(pte));
-            vm_free((uint64_t *)child, level + 1);
-            pgdir[i] = 0;
+    if (level == 3) {
+        for (int i = 0; i < 512; i++) {
+            if (pgdir[i] & PTE_P) {
+                kfree((char *)P2V(PTE_ADDR(pgdir[i])));
+            }
         }
+    } else if (level >= 0 && level <= 2) {
+        for (int i = 0; i < 512; i++) {
+            if (pgdir[i] & PTE_P) {
+                vm_free((uint64_t *)(P2V(PTE_ADDR(pgdir[i]))), level + 1);
+            }
+        }
+        kfree((char *)pgdir);
+    } else {
+        panic("vm_free: unexpected level: %d\n", level);
     }
-    kfree((char *)pgdir);
 }
 
 /* Get a new page table */
@@ -311,6 +317,43 @@ uva2ka(uint64_t *pgdir, char *uva)
         return 0;
     }
     return (char *)P2V(PTE_ADDR(*pte));
+}
+
+/*
+ * Given a parent process's page table, create a copy
+ * of it for a child.
+ */
+uint64_t *
+copyuvm(uint64_t* pgdir, uint64_t sz)
+{
+    uint64_t* new_pgdir = pgdir_init();
+    if (new_pgdir == 0) {
+        return 0;
+    } 
+    
+    for (uint64_t i = 0; i < sz; i += PGSIZE) {
+        uint64_t* pte = pgdir_walk(pgdir, (void*)i, 0);
+        if (pte == 0) {
+            panic("copyuvm\n");
+        } 
+        if (((*pte) & (PTE_PAGE | PTE_P)) == 0) {
+            panic("copyuvm\n");
+        } 
+        uint64_t pa = PTE_ADDR(*pte);
+        int64_t perm = *pte & (PTE_USER | PTE_RO);
+        uint64_t* page = (uint64_t *)kalloc();
+        if (page == 0) {
+            kfree((char *)new_pgdir);
+            return 0;
+        } 
+        memcpy(page, P2V(pa), PGSIZE);
+        if (map_region(new_pgdir, (void *) i, PGSIZE, V2P(page), perm) < 0) {
+            kfree((char *)new_pgdir);
+            return 0;
+        } 
+    }
+    
+    return new_pgdir;
 }
 
 /*
