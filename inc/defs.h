@@ -105,6 +105,9 @@ void            uvm_switch(struct proc *);
 int             uvm_alloc(uint64_t *, uint64_t, uint64_t);
 int             uvm_dealloc(uint64_t *, uint64_t, uint64_t);
 int             uvm_load(uint64_t *, char *, struct inode *, uint64_t, uint64_t);
+void            clearpteu(uint64_t *, char *);
+int             copyout(uint64_t *, uint64_t, void *, uint64_t);
+char *          uva2ka(uint64_t *, char *);
 void            test_mem();
 
 

@@ -161,13 +161,12 @@ uvm_alloc(uint64_t *pgdir, uint64_t oldsz, uint64_t newsz)
     char *mem;
     uint64_t a;
 
-    if (newsz >= KERNBASE) {
+    if (newsz >= UADDR_SZ) {
         return 0;
     }
     if (newsz < oldsz) {
         return oldsz;
     }
-
     a = ROUNDUP(oldsz, PGSIZE);
     for (; a < newsz; a += PGSIZE) {
         mem = kalloc();
@@ -230,7 +229,7 @@ uvm_load(uint64_t *pgdir, char *addr, struct inode *ip, uint64_t offset, uint64_
     uint64_t i, pa, n;
     uint64_t *pte;
 
-    if ((uint64_t) addr % PGSIZE != 0) {
+    if (((uint64_t)addr - offset) % PGSIZE != 0) {
         panic("uvm_load: addr must be page aligned\n");
     }
     for (i = 0; i < sz; i += PGSIZE) {
@@ -248,6 +247,70 @@ uvm_load(uint64_t *pgdir, char *addr, struct inode *ip, uint64_t offset, uint64_
         }
     }
     return 0;
+}
+
+/*
+ * Clear PTE_USER on a page. Used to create an inaccessible
+ * page beneath the user stack.
+ */
+void
+clearpteu(uint64_t *pgdir, char *uva)
+{
+    uint64_t *pte;
+
+    pte = pgdir_walk(pgdir, uva, 0);
+    if (pte == 0) {
+        panic("clearpteu\n");
+    }
+    *pte &= ~PTE_USER;
+}
+
+/*
+ * Copy len bytes from p to user address va in page table pgdir.
+ * Most useful when pgdir is not the current page table.
+ * uva2ka ensures this only works for PTE_USER pages.
+ */
+int
+copyout(uint64_t *pgdir, uint64_t va, void *p, uint64_t len)
+{
+    char *buf, *pa0;
+    uint64_t n, va0;
+
+    buf = (char *)p;
+    while (len > 0) {
+        va0 = (uint64_t)ROUNDDOWN(va, PGSIZE);
+        pa0 = uva2ka(pgdir, (char *)va0);
+        if (pa0 == 0) {
+            return -1;
+        }
+        n = PGSIZE - (va - va0);
+        if (n > len) {
+            n = len;
+        }
+        memmove(pa0 + (va - va0), buf, n);
+        len -= n;
+        buf += n;
+        va = va0 + PGSIZE;
+    }
+    return 0;
+}
+
+/*
+ * Map user virtual address to kernel address.
+ */
+char *
+uva2ka(uint64_t *pgdir, char *uva)
+{
+    uint64_t *pte;
+
+    pte = pgdir_walk(pgdir, uva, 0);
+    if ((*pte & PTE_P) == 0) {
+        return 0;
+    }
+    if ((*pte & PTE_USER) == 0) {
+        return 0;
+    }
+    return (char *)P2V(PTE_ADDR(*pte));
 }
 
 /*

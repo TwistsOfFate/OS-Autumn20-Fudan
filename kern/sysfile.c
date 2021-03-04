@@ -368,6 +368,8 @@ sys_exec()
     }
 
     cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
-    return execve(path, argv, (char **)0);
+    int ret = execve(path, argv, (char **)0);
+    cprintf("execve=%d\n", ret);
+    return ret;
 }
 
