@@ -124,6 +124,8 @@ user_init()
     p->tf->elr = 0;
 
     p->state = RUNNABLE;
+
+    p->cwd = namei("/");
 }
 
 /*

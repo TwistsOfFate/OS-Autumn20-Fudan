@@ -29,14 +29,12 @@ int test_initial_scan()
 {
     int remaining = INIT_FILE_NUM;
     struct inode* root_dir = namei("/");
-    cprintf("test_initial_scan: 0\n");
     ilock(root_dir);
     if (root_dir == 0 || root_dir->type != T_DIR) {
         iunlockput(root_dir);
         return -1;
     }
     struct dirent de;
-    cprintf("test_initial_scan: 1\n");
     for (size_t off = 0; off < root_dir->size; off += sizeof(de)) {
         if (readi(root_dir, (char*)&de, off, sizeof(de)) != sizeof(de)) {
             iunlockput(root_dir);
@@ -63,16 +61,20 @@ int test_initial_read() // read the elf magic number
     Elf64_Ehdr elf_header;
     for (int i = 0; i < INIT_FILE_NUM; i++) {
         struct file* f = filealloc();
+        cprintf("test_initial_read: 1\n");
         f->readable = 1;
         f->type = FD_INODE;
         f->ip = namei(init_files[i]);
+        cprintf("test_initial_read: 2\n");
         if (f->ip == 0) {
             return -1;
         } 
         f->off = 0;
         f->ref = 1;
         ilock(f->ip);
+        cprintf("test_initial_read: 3\n");
         iunlock(f->ip);
+        cprintf("test_initial_read: 4\n");
         if (fileread(f, (char*)&elf_header, sizeof(elf_header)) != sizeof(elf_header)) {
             return -1;
         }

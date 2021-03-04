@@ -324,6 +324,7 @@ ilock(struct inode *ip)
     struct dinode *dip;
 
     if (ip == 0 || ip->ref < 1) {
+        cprintf("ilock: ip=%d, ip->ref=%d\n", ip, ip->ref);
         panic("ilock: invalid inode\n");
     }
 
@@ -705,6 +706,8 @@ namex(char *path, int nameiparent, char *name)
         ip = iget(ROOTDEV, ROOTINO);
     else
         ip = idup(thiscpu->proc->cwd);
+    
+    cprintf("namex: ip=%d\n", ip);
 
     while ((path = skipelem(path, name)) != 0) {
         ilock(ip);
@@ -735,6 +738,7 @@ struct inode *
 namei(char *path)
 {
     char name[DIRSIZ];
+    cprintf("namei: %s\n", path);
     return namex(path, 0, name);
 }
 
