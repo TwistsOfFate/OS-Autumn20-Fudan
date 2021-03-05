@@ -216,13 +216,13 @@ forkret()
         iinit(ROOTDEV);
         initlog(ROOTDEV);
 
-#ifdef TEST_FILE_SYSTEM
+// #ifdef TEST_FILE_SYSTEM
         raise_priority();
         set_cpus_allowed(~0 ^ 1);       // Don't run on CPU0.
         cprintf("-------------- start fs_test --------------\n");
         test_file_system();
         cprintf("-------------- end fs_test --------------\n");
-#endif
+// #endif
     }
 }
 
