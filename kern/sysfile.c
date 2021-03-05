@@ -436,15 +436,12 @@ sys_exec()
             argv[i] = 0;
             break;
         }
-
         if (fetchstr(uarg, &argv[i]) < 0) {
             return -1;
         } 
     }
 
-    cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
-    int ret = execve(path, argv, (char **)0);
-    cprintf("execve=%d\n", ret);
-    return ret;
+    // cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
+    return execve(path, argv, (char **)0);
 }
 

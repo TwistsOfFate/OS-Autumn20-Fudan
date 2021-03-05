@@ -232,12 +232,28 @@ uvm_dealloc(uint64_t *pgdir, uint64_t oldsz, uint64_t newsz)
  */
 int
 uvm_load(uint64_t *pgdir, char *addr, struct inode *ip, uint64_t offset, uint64_t sz) {
-    uint64_t i, pa, n;
+    uint64_t i, pa, n, va, start;
     uint64_t *pte;
 
     if (((uint64_t)addr - offset) % PGSIZE != 0) {
         panic("uvm_load: addr must be page aligned\n");
     }
+
+    va = ROUNDDOWN((uint64_t)addr, PGSIZE);
+    pte = pgdir_walk(pgdir, va, 0);
+    if (pte == 0) {
+        panic("loaduvm: addr 0x%p should exist\n", va);
+    }
+    pa = PTE_ADDR(*pte);
+    start = (uint64_t)addr % PGSIZE;
+    n = MIN(sz, PGSIZE - start);
+    if (readi(ip, P2V(pa + start), offset, n) != n) {
+        return -1;
+    }
+    offset += n;
+    addr += n;
+    sz -= n;
+
     for (i = 0; i < sz; i += PGSIZE) {
         if ((pte = pgdir_walk(pgdir, addr + i, 0)) == 0) {
             panic("uvm_load: address should exist\n");

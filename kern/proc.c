@@ -125,6 +125,7 @@ user_init()
     p->state = RUNNABLE;
 
     p->cwd = namei("/");
+    p->sz = PGSIZE;
 }
 
 /*
@@ -469,7 +470,8 @@ procdump()
     panic("unimplemented");
 }
 
-int growproc(int n)
+int
+growproc(int n)
 {
     uint64_t sz;
 
@@ -492,3 +494,29 @@ int growproc(int n)
     return 0;
 }
 
+void
+user_idle_init()
+{
+    struct proc* p;
+    /* for why our symbols differ from xv6, please refer https://stackoverflow.com/questions/10486116/what-does-this-gcc-error-relocation-truncated-to-fit-mean */
+    extern char _binary_obj_user_initcode_start[], _binary_obj_user_initcode_size[];
+
+    p = proc_alloc();
+
+    if ((p->pgdir = pgdir_init()) == 0) {
+        panic("user_idle_init: kalloc failed\n");
+    }
+
+    initproc = p;
+    uvm_init(p->pgdir, _binary_obj_user_initcode_start + 0x1c, (long)(_binary_obj_user_initcode_size - 0x1c));
+
+    // tf
+    memset(p->tf, 0, sizeof(*(p->tf)));
+    p->tf->spsr = 0;
+    p->tf->sp = PGSIZE;
+    p->tf->r30 = 0;
+    p->tf->elr = 0;
+
+    p->state = RUNNABLE;
+    p->sz = PGSIZE;
+}

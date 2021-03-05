@@ -27,7 +27,6 @@ irq_init()
 void
 interrupt(struct trapframe *tf)
 {
-    int src2;
     struct proc *proc = thiscpu->proc;
     int src = get32(IRQ_SRC_CORE(cpuid()));
     if (src & IRQ_CNTPNSIRQ) {
@@ -46,7 +45,8 @@ interrupt(struct trapframe *tf)
             cprintf("unexpected gpu intr p1 %x, p2 %x, sd %d, omitted\n", p1, p2, p2 & VC_ARASANSDIO_INT);
         }
     } else {
-        cprintf("unexpected interrupt at cpu %d\n", cpuid());
+        int src2 = resr();
+        cprintf("unexpected interrupt at cpu %d, src=0x%x, resr=0x%x, pid=%d\n", cpuid(), src, src2, proc->pid);
     }
 }
 

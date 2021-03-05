@@ -11,13 +11,13 @@ start:
     mov     x8, #SYS_execve
     svc     0x00
 
-loop:
-    b       loop
-
 exit:
     mov     x8, #SYS_exit
     svc     0x00
     b       exit
+
+loop:
+    b       loop
 
 # char init[] = "/init\0";
 init:

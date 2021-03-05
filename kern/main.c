@@ -43,8 +43,9 @@ main()
         irq_init();
         proc_init();
 
-        for (int i = 0; i < 4; ++i) {
-            user_init();
+        user_init();
+        for (int i = 0; i < 3; ++i) {
+            user_idle_init();
         }
         
         binit();
