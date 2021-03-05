@@ -20,6 +20,8 @@ void forkret();
 extern void trapret();
 void swtch(struct context **, struct context *);
 
+static void wakeup1(void *chan);
+
 /*
  * Initialize the spinlock for ptable to serialize the access to ptable
  */
@@ -232,17 +234,43 @@ forkret()
 void
 exit()
 {
-    struct proc *p = thiscpu->proc;
-    /* TODO: Your code here. */
-    // if (p == initproc)
-    //     panic("exit: init exiting\n");
-    
+    struct proc *p;
+    int fd;
+
+    if (thiscpu->proc == initproc)
+        panic("init exiting");
+
+    // Close all open files.
+    for (fd = 0; fd < NOFILE; fd++) {
+        if (thisproc()->ofile[fd]) {
+            fileclose(thisproc()->ofile[fd]);
+            thisproc()->ofile[fd] = 0;
+        }
+    }
+
+    begin_op();
+    iput(thisproc()->cwd);
+    end_op();
+    thisproc()->cwd = 0;
+
     acquire(&ptable.lock);
 
-    p->state = ZOMBIE;
-    sched();
+    // Parent might be sleeping in wait().
+    wakeup1(thiscpu->proc->parent);
 
-    panic("exit: zombie exit\n");
+    // Pass abandoned children to init.
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if (p->parent == thisproc()) {
+            p->parent = initproc;
+            if (p->state == ZOMBIE)
+                wakeup1(initproc);
+        }
+    }
+
+    // Jump into the scheduler, never to return.
+    thiscpu->proc->state = ZOMBIE;
+    sched();
+    panic("zombie exit");
 }
 
 /*
@@ -307,34 +335,30 @@ sleep(void *chan, struct spinlock *lk)
 #endif
 }
 
+/*
+ * Wake up all processes sleeping on chan.
+ * The ptable lock must be held.
+ */
+static void
+wakeup1(void *chan)
+{
+    struct proc *p;
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+        if (p->state == SLEEPING && p->chan == chan) {
+            p->state = RUNNABLE;
+        }
+    }
+}
+
 /* Wake up all processes sleeping on chan. */
 void
 wakeup(void *chan)
 {
     /* TODO: Your code here. */
-    struct proc *p;
-#ifdef PRINT_TRACE
-    cprintf("wakeup: cpu%d, pid %d, chan %d\n", cpuid(), thiscpu->proc->pid, chan);
-    cprintf("wakeup: acquiring ptable lock...");
-#endif
     acquire(&ptable.lock);
-#ifdef PRINT_TRACE
-    cprintf("Success!\n");
-#endif
-
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
-        if (p->state == SLEEPING && p->chan == chan) {
-#ifdef PRINT_TRACE
-            cprintf("wakeup: pid %d runnable\n", p->pid);
-#endif
-            p->state = RUNNABLE;
-        }
-    }
-
+    wakeup1(chan);
     release(&ptable.lock);
-#ifdef PRINT_TRACE
-    cprintf("wakeup: released ptable lock\n");
-#endif
 }
 
 /* 

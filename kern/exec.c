@@ -17,7 +17,8 @@ int
 execve(const char *path, char *const argv[], char *const envp[])
 {
     char *s, *last;
-    uint64_t sz, sp, ustack[3+MAXARG+1];
+    uint64_t sz, sp;
+    uint64_t ustack[3+MAXARG+1];
     int i, off, argc;
     Elf64_Ehdr elf;
     struct inode *ip;

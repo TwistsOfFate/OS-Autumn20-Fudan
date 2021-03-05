@@ -126,84 +126,87 @@ syscall1(struct trapframe *tf)
         // FIXME: Use pid instead of tid since we don't have threads :)
         case SYS_set_tid_address:
         case SYS_gettid:            // 96
-            cprintf("%d=%d\n", sysno, thisproc()->pid);
-            return thisproc()->pid;
+            // cprintf("%d=%d\n", sysno, thisproc()->pid);
+            return tf->r0 = thisproc()->pid;
 
         // FIXME: Hack TIOCGWINSZ(get window size)
         case SYS_ioctl:
+            // cprintf("%d=%d\n", sysno, 0);
             if (tf->r1 == 0x5413) return 0;
             else panic("ioctl unimplemented. ");
         
         // FIXME: Always return 0 since we don't have signals  :)
         case SYS_rt_sigprocmask:
-            return 0;
+            return tf->r0 = 0;
         case SYS_brk:
             tret = sys_brk();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_execve:            // 221
             tret = sys_exec();
-            cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            // cprintf("%d=%d\n", sysno, tret);
+            return tf->r0 = tret;
         case SYS_sched_yield:
             tret = sys_yield();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_clone:             // 220
             tret = sys_clone();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_wait4:
             tret = sys_wait4();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
             
         // FIXME: exit_group should kill every thread in the current thread group.
         case SYS_exit_group:
         case SYS_exit:
             tret = sys_exit();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_dup:               // 23
             tret = sys_dup();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_chdir:
             tret = sys_chdir();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_fstat:
             tret = sys_fstat();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_newfstatat:
             tret = sys_fstatat();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_mkdirat:
             tret = sys_mkdirat();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_mknodat:           // 33
             tret = sys_mknodat();
             // cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            return tf->r0 = tret;
         case SYS_openat:            // 56
             tret = sys_openat();
-            cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            // cprintf("%d=%d\n", sysno, tret);
+            return tf->r0 = tret;
         case SYS_writev:            // 66
             tret = sys_writev();
-            cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            // cprintf("%d=%d\n", sysno, tret);
+            return tf->r0 = tret;
         case SYS_read:
             tret = sys_read();
-            cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            // cprintf("%d=%d\n", sysno, tret);
+            return tf->r0 = tret;
+        case SYS_write:
+            return tf->r0 = sys_write();
         case SYS_close:
             tret = sys_close();
-            cprintf("%d=%d\n", sysno, tret);
-            return tret;
+            // cprintf("%d=%d\n", sysno, tret);
+            return tf->r0 = tret;
         
         default:
             // FIXME: don't panic.

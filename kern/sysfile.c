@@ -37,7 +37,7 @@ argfd(int n, int64_t *pfd, struct file **pf)
         return -1;
     }
     if (fd < 0 || fd >= NOFILE || (f = thisproc()->ofile[fd]) == 0) {
-        cprintf("argfd: fd=%d\n", fd);
+        cprintf("argfd: fd=%d, f=%d\n", fd, f);
         return -1;
     }
     if (pfd)
@@ -449,7 +449,7 @@ sys_exec()
         } 
     }
 
-    cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
+    // cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
     return execve(path, argv, (char **)0);
 }
 
