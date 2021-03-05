@@ -11,7 +11,6 @@ int
 main()
 {
     int pid, wpid;
-    printf("at init\n");
 
     if (open("console", O_RDWR) < 0) {
         mknod("console", 1, 1);

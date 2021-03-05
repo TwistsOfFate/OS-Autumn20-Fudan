@@ -32,10 +32,14 @@ argfd(int n, int64_t *pfd, struct file **pf)
     int64_t fd;
     struct file *f;
 
-    if (argint(n, &fd) < 0)
+    if (argint(n, &fd) < 0) {
+        cprintf("argfd: 1\n");
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = thisproc()->ofile[fd]) == 0)
+    }
+    if (fd < 0 || fd >= NOFILE || (f = thisproc()->ofile[fd]) == 0) {
+        cprintf("argfd: fd=%d\n", fd);
         return -1;
+    }
     if (pfd)
         *pfd = fd;
     if (pf)
@@ -141,9 +145,13 @@ sys_writev()
     struct file *f;
     int64_t fd, iovcnt;
     struct iovec *iov;
-    if (argfd(0, &fd, &f) < 0 ||
-        argint(2, &iovcnt) < 0 ||
-        argptr(1, &iov, iovcnt * sizeof(struct iovec)) < 0) {
+    int ret1, ret2, ret3;
+
+    ret1 = argfd(0, &fd, &f);
+    ret2 = argint(2, &iovcnt);
+    ret3 = argptr(1, &iov, iovcnt * sizeof(struct iovec));
+    if (ret1 < 0 || ret2 < 0 || ret3 < 0) {
+        // cprintf("sys_writev: %d %d %d\n", ret1, ret2, ret3);
         return -1;
     }
     size_t tot = 0;
@@ -441,7 +449,7 @@ sys_exec()
         } 
     }
 
-    // cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
+    cprintf("sys_exec: path=%s, argv[0]=%s\n", path, argv[0]);
     return execve(path, argv, (char **)0);
 }
 
